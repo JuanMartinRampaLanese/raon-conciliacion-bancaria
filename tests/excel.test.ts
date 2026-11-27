@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import { expect, it } from 'vitest';
-import type { Movimiento, Resultado, Resumen } from '@/lib/dominio';
+import type { Movimiento, Regla, Resultado, Resumen } from '@/lib/dominio';
 import { controlarCierre } from '@/lib/cierre';
 import { generarExcel, nombreArchivoExcel } from '@/lib/excel';
 import { calcularSaldosPorCliente } from '@/lib/saldos';
@@ -80,6 +80,48 @@ it('genera siete hojas, fechas reales y ningún valor fórmula', async () => {
     'Reglas aplicadas',
   ]);
   expect(libro.getWorksheet('Conciliados')?.getCell('C2').value).toBeInstanceOf(Date);
+  const hojaResumen = libro.getWorksheet('Resumen')!;
+  const filaResumen = (indicador: string): ExcelJS.Row => {
+    let encontrada: ExcelJS.Row | undefined;
+    hojaResumen.eachRow((fila) => {
+      if (fila.getCell(1).value === indicador) encontrada = fila;
+    });
+    expect(encontrada, indicador).toBeDefined();
+    return encontrada!;
+  };
+  expect(hojaResumen.getRow(1).values).toEqual([
+    undefined,
+    'Indicador',
+    'Valor',
+    'Cantidad',
+    'Monto',
+  ]);
+  const formatosResumen: Record<string, string | undefined> = {
+    Banco: undefined,
+    Moneda: undefined,
+    Período: undefined,
+    'Movimientos del banco': '0',
+    'Movimientos de la planilla': '0',
+    'Conciliado por cantidad': '0.00%',
+    'Conciliado por monto': '0.00%',
+    'Control de cierre': undefined,
+    'Diferencia de cierre': '#,##0.00',
+    'Fondos de terceros': '#,##0.00',
+    'Saldo en banco': '#,##0.00',
+    'Diferencia fondos/banco': '#,##0.00',
+    'Generado el': 'dd/mm/yyyy hh:mm',
+    Aviso: undefined,
+  };
+  for (const [indicador, formato] of Object.entries(formatosResumen)) {
+    expect(filaResumen(indicador).getCell(2).numFmt, indicador).toBe(formato);
+  }
+  expect(filaResumen('Movimientos de la planilla').getCell(2).value).toBe(1);
+  expect(filaResumen('Diferencia fondos/banco').getCell(2).value).toBe(1_000);
+  expect(filaResumen('Generado el').getCell(2).value).toBeInstanceOf(Date);
+  const totalConciliado = filaResumen('Estado: conciliado');
+  expect(totalConciliado.getCell(2).value).toBeNull();
+  expect(totalConciliado.getCell(3)).toMatchObject({ value: 1, numFmt: '0' });
+  expect(totalConciliado.getCell(4)).toMatchObject({ value: 100, numFmt: '#,##0.00' });
   libro.eachSheet((hoja) => {
     hoja.eachRow((fila) => {
       fila.eachCell((celda) => {
@@ -89,5 +131,85 @@ it('genera siete hojas, fechas reales y ningún valor fórmula', async () => {
   });
   expect(nombreArchivoExcel('Banco Prueba', 'UYU', '2026-10')).toBe(
     'conciliacion_banco_prueba_UYU_2026-10.xlsx',
+  );
+});
+
+it('cuenta solo la regla de gasto específica que realmente se aplicó', async () => {
+  const banco: Movimiento[] = [
+    {
+      id: 'B-0001',
+      origen: 'banco',
+      fecha: '2026-10-01',
+      descripcion: 'IVA COMISION',
+      texto: 'IVA COMISION',
+      centavos: -2_200,
+      moneda: 'UYU',
+      fila: 2,
+    },
+  ];
+  const resultados: Resultado[] = [
+    {
+      id: 'R-0001',
+      estado: 'gasto_bancario',
+      paso: 'regla',
+      banco: ['B-0001'],
+      planilla: [],
+      diferenciaCentavos: -2_200,
+      puntaje: 1,
+      nota: 'Gasto bancario detectado por la regla “IVA COMISION”',
+    },
+  ];
+  const reglas: Regla[] = [
+    {
+      id: 'GENERAL',
+      patron: 'COMISION',
+      accion: 'gasto_bancario',
+      origen: 'por_defecto',
+    },
+    {
+      id: 'ESPECIFICA',
+      patron: 'IVA COMISION',
+      accion: 'gasto_bancario',
+      origen: 'por_defecto',
+    },
+  ];
+  const resumen: Resumen = {
+    cantidadBanco: 1,
+    cantidadPlanilla: 0,
+    conciliados: 0,
+    dudosos: 0,
+    soloBanco: 0,
+    soloPlanilla: 0,
+    gastosBancarios: 1,
+    porcentajeConciliadoCantidad: 0,
+    porcentajeConciliadoMonto: 0,
+    totalesPorEstado: { gasto_bancario: { cantidad: 1, centavos: -2_200 } },
+  };
+  const cierre = controlarCierre(banco);
+  const bytes = await generarExcel({
+    banco: 'BROU',
+    moneda: 'UYU',
+    periodo: '2026-10',
+    movimientosBanco: banco,
+    movimientosPlanilla: [],
+    resultados,
+    resumen,
+    cierre,
+    fondos: calcularSaldosPorCliente([], resultados),
+    reglas,
+    generadoEl: new Date(Date.UTC(2026, 10, 24)),
+  });
+  const libro = new ExcelJS.Workbook();
+  await libro.xlsx.load(bytes.slice().buffer);
+  const hoja = libro.getWorksheet('Reglas aplicadas')!;
+  const conteos = new Map<string, number>();
+  hoja.eachRow((fila, numero) => {
+    if (numero > 1) conteos.set(String(fila.getCell(1).value), Number(fila.getCell(6).value));
+  });
+  expect(conteos).toEqual(
+    new Map([
+      ['GENERAL', 0],
+      ['ESPECIFICA', 1],
+    ]),
   );
 });

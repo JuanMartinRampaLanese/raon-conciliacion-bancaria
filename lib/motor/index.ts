@@ -109,7 +109,13 @@ export function puntuar(banco: Movimiento, planilla: Movimiento): number {
       ? 1
       : Math.max(0, 1 - diferencia / Math.max(1, 0.05 * Math.abs(planilla.centavos)));
   const fechaScore = Math.max(0, 1 - diferenciaDias(banco.fecha, planilla.fecha) / 10);
-  return 0.5 * montoScore + 0.3 * similitudTextos(banco, planilla) + 0.2 * fechaScore;
+  return redondearPuntaje(
+    0.5 * montoScore + 0.3 * similitudTextos(banco, planilla) + 0.2 * fechaScore,
+  );
+}
+
+function redondearPuntaje(valor: number): number {
+  return Math.round((valor + Number.EPSILON) * 100) / 100;
 }
 
 function mismoSigno(a: number, b: number): boolean {
@@ -138,6 +144,23 @@ function aplicarReglasCliente(banco: Movimiento[], reglas: Regla[]): Movimiento[
     const regla = asignaciones.find((candidata) => movimiento.texto.includes(candidata.patron));
     return regla ? { ...movimiento, cliente: regla.cliente } : { ...movimiento };
   });
+}
+
+export function seleccionarReglaGasto(movimiento: Movimiento, reglas: Regla[]): Regla | undefined {
+  return reglas
+    .map((regla, orden) => ({
+      regla,
+      orden,
+      patronNormalizado: normalizarTexto(regla.patron),
+    }))
+    .filter(
+      ({ regla, patronNormalizado }) =>
+        regla.accion === 'gasto_bancario' &&
+        patronNormalizado.length > 0 &&
+        movimiento.texto.includes(patronNormalizado),
+    )
+    .sort((a, b) => b.patronNormalizado.length - a.patronNormalizado.length || a.orden - b.orden)[0]
+    ?.regla;
 }
 
 function porMonto(movimientos: Movimiento[]): Map<number, Movimiento[]> {
@@ -243,9 +266,14 @@ export function calcularResumen(
 ): Resumen {
   const conciliadosEstados = new Set<Estado>(['conciliado', 'conciliado_con_diferencia']);
   const totalesPorEstado: Resumen['totalesPorEstado'] = {};
+  const bancoPorId = new Map(banco.map((movimiento) => [movimiento.id, movimiento]));
+  const planillaPorId = new Map(planilla.map((movimiento) => [movimiento.id, movimiento]));
   for (const resultado of resultados) {
-    const centavos = resultado.banco
-      .map((id) => banco.find((movimiento) => movimiento.id === id)?.centavos ?? 0)
+    const centavos = (resultado.banco.length > 0 ? resultado.banco : resultado.planilla)
+      .map(
+        (id) =>
+          (resultado.banco.length > 0 ? bancoPorId.get(id) : planillaPorId.get(id))?.centavos ?? 0,
+      )
       .reduce((total, monto) => total + monto, 0);
     const actual = totalesPorEstado[resultado.estado] ?? { cantidad: 0, centavos: 0 };
     totalesPorEstado[resultado.estado] = {
@@ -422,12 +450,9 @@ export function conciliar(entrada: {
   }
 
   // 5. Gastos bancarios, solo negativos y después de todos los cruces.
-  const reglasGasto = entrada.reglas
-    .filter((regla) => regla.accion === 'gasto_bancario')
-    .map((regla) => ({ ...regla, patron: normalizarTexto(regla.patron) }));
   for (const movimientoBanco of banco) {
     if (usadosBanco.has(movimientoBanco.id) || movimientoBanco.centavos >= 0) continue;
-    const regla = reglasGasto.find((candidata) => movimientoBanco.texto.includes(candidata.patron));
+    const regla = seleccionarReglaGasto(movimientoBanco, entrada.reglas);
     if (!regla) continue;
     usadosBanco.add(movimientoBanco.id);
     resultados.push({
@@ -454,10 +479,7 @@ export function conciliar(entrada: {
       .map((movimientoPlanilla) => {
         const valor = puntuar(movimientoBanco, movimientoPlanilla);
         const pagoParcial =
-          movimientoBanco.cliente &&
-          movimientoPlanilla.cliente &&
-          normalizarTexto(movimientoBanco.cliente) ===
-            normalizarTexto(movimientoPlanilla.cliente) &&
+          clienteCompatible(movimientoBanco, movimientoPlanilla, config) &&
           Math.abs(movimientoBanco.centavos) < Math.abs(movimientoPlanilla.centavos);
         return {
           planilla: [movimientoPlanilla.id],

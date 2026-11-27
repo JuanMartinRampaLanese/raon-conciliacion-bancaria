@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { basename, extname, join } from 'node:path';
+import { join } from 'node:path';
 import type { MapeoColumnas, Moneda } from '@/lib/dominio';
 import { controlarCierre } from '@/lib/cierre';
 import { generarExcel, nombreArchivoExcel } from '@/lib/excel';
@@ -7,17 +7,7 @@ import { leerArchivo } from '@/lib/lectura';
 import { conciliar, REGLAS_GASTOS_PREDETERMINADAS } from '@/lib/motor';
 import { normalizarFilas } from '@/lib/normalizar';
 import { calcularSaldosPorCliente } from '@/lib/saldos';
-
-function argumentos(argv: string[]): Record<string, string> {
-  const resultado: Record<string, string> = {};
-  for (let indice = 0; indice < argv.length; indice += 1) {
-    const clave = argv[indice];
-    if (!clave.startsWith('--') || !argv[indice + 1]) continue;
-    resultado[clave.slice(2)] = argv[indice + 1];
-    indice += 1;
-  }
-  return resultado;
-}
+import { parsearArgumentos, resolverNombreBanco } from '@/scripts/argumentos';
 
 async function cargar(ruta: string): Promise<Uint8Array> {
   const contenido = await readFile(ruta);
@@ -25,10 +15,10 @@ async function cargar(ruta: string): Promise<Uint8Array> {
 }
 
 async function principal(): Promise<void> {
-  const args = argumentos(process.argv.slice(2));
+  const args = parsearArgumentos(process.argv.slice(2));
   if (!args.banco || !args.planilla || !args.moneda) {
     throw new Error(
-      'Uso: npm run conciliar -- --banco <archivo> --planilla <archivo> --moneda UYU [--mapeo mapeo.json]',
+      'Uso: npm run conciliar -- --banco <archivo> --planilla <archivo> --moneda UYU [--nombre-banco "BROU"] [--mapeo mapeo.json]',
     );
   }
   const moneda = args.moneda.toUpperCase() as Moneda;
@@ -80,7 +70,7 @@ async function principal(): Promise<void> {
     cierre.saldoFinalCentavos,
   );
   const periodo = banco.movimientos[0].fecha.slice(0, 7);
-  const nombreBanco = basename(args.banco, extname(args.banco));
+  const nombreBanco = resolverNombreBanco(args);
   const excel = await generarExcel({
     banco: nombreBanco,
     moneda,

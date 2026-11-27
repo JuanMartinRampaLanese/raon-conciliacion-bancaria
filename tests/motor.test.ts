@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { Movimiento, Regla } from '@/lib/dominio';
 import {
   aceptarDudoso,
+  calcularResumen,
   conciliar,
+  puntuar,
   REGLAS_GASTOS_PREDETERMINADAS,
   similitudTextos,
 } from '@/lib/motor';
@@ -91,8 +93,17 @@ describe('cascada del motor', () => {
     expect(resultado.resultados.map((r) => r.estado)).toEqual(['gasto_bancario', 'solo_banco']);
   });
 
-  it('crea dudoso por pago parcial y permite aceptarlo', () => {
-    const banco = [m('B-0001', 'banco', '2026-10-01', 100_000, 'TRF Hotel', 'Hotel')];
+  it('aplica la regla de gasto más específica', () => {
+    const resultado = correr(
+      [m('B-0001', 'banco', '2026-10-01', -2_200, 'IVA COMISION')],
+      [],
+      REGLAS_GASTOS_PREDETERMINADAS,
+    ).resultados[0];
+    expect(resultado.nota).toContain('IVA COMISION');
+  });
+
+  it('crea dudoso por pago parcial usando similitud y permite aceptarlo', () => {
+    const banco = [m('B-0001', 'banco', '2026-10-01', 100_000, 'TRF Hotel')];
     const planilla = [m('P-0001', 'planilla', '2026-10-01', 200_000, 'Alquiler', 'Hotel')];
     const inicial = correr(banco, planilla);
     const dudoso = inicial.resultados.find((r) => r.estado === 'dudoso')!;
@@ -114,6 +125,34 @@ describe('cascada del motor', () => {
     expect(similitudTextos(banco[0], planilla[0])).toBeGreaterThanOrEqual(0.9);
     expect(correr(banco, planilla)).toEqual(correr(banco, planilla));
     expect(banco[0].cliente).toBeUndefined();
+  });
+
+  it('redondea todos los puntajes a dos decimales', () => {
+    const banco = m('B-0001', 'banco', '2026-10-01', 100_000, 'TRF Hotel');
+    const planilla = m('P-0001', 'planilla', '2026-10-01', 200_000, 'Alquiler', 'Hotel');
+    expect(puntuar(banco, planilla)).toBe(0.47);
+    const candidato = correr([banco], [planilla]).resultados[0].candidatos?.[0];
+    expect(candidato?.puntaje).toBe(0.47);
+  });
+
+  it('suma los montos de planilla en el total solo_planilla', () => {
+    const planilla = [m('P-0001', 'planilla', '2026-10-01', 123_456, 'Pendiente', 'Acme')];
+    const resumen = calcularResumen(
+      [
+        {
+          id: 'R-0001',
+          estado: 'solo_planilla',
+          banco: [],
+          planilla: ['P-0001'],
+          diferenciaCentavos: -123_456,
+          puntaje: 0,
+          nota: '',
+        },
+      ],
+      [],
+      planilla,
+    );
+    expect(resumen.totalesPorEstado.solo_planilla?.centavos).toBe(123_456);
   });
 });
 

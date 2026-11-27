@@ -20,8 +20,9 @@ como marco, sin afirmar certificaciones.
     npm run conciliar -- --banco test-data/banco.csv --planilla test-data/planilla.csv --moneda UYU
     npm run dev
 
-El comando imprime el resumen y deja el archivo generado en salida/. Para un formato no detectado,
-podés agregar --mapeo mapeo.json con objetos banco y planilla.
+El comando imprime el resumen y deja el archivo generado en salida/. Podés indicar el nombre que
+se muestra en el Resumen y en el archivo con `--nombre-banco "BROU"`. Para un formato no detectado,
+podés agregar `--mapeo mapeo.json` con objetos banco y planilla.
 
 ## Verificación
 

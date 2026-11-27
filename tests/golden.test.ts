@@ -64,6 +64,10 @@ describe('datos integrales', () => {
       expect(obtenido?.estado, id).toBe(intencion.estado);
       expect(obtenido?.banco, id).toEqual(intencion.banco);
     }
+    const pagoParcial = resultado.resultados.find((r) => r.banco.includes('B-0059'));
+    expect(
+      pagoParcial?.candidatos?.find((candidato) => candidato.planilla.includes('P-0060'))?.motivo,
+    ).toContain('Posible pago parcial: faltan $');
     expect(banco.filasExcluidasMoneda).toBe(1);
     expect(planilla.filasExcluidasMoneda).toBe(1);
     expect(controlarCierre(banco.movimientos).cierra).toBe(true);

@@ -3,6 +3,7 @@ import type { Moneda, Movimiento, Regla, Resultado, Resumen } from '@/lib/domini
 import type { ControlCierre } from '@/lib/cierre';
 import type { ResumenFondosTerceros } from '@/lib/saldos';
 import { normalizarTexto } from '@/lib/normalizar';
+import { seleccionarReglaGasto } from '@/lib/motor';
 
 const COLOR_CABECERA = 'FF17324D';
 const COLORES_ESTADO: Record<string, string> = {
@@ -77,36 +78,80 @@ function porId(movimientos: Movimiento[]): Map<string, Movimiento> {
 
 function agregarResumen(libro: ExcelJS.Workbook, entrada: EntradaExcel): void {
   const hoja = libro.addWorksheet('Resumen');
-  prepararHoja(hoja, ['Indicador', 'Valor']);
-  const filas: Array<[string, string | number | Date]> = [
-    ['Banco', textoSeguro(entrada.banco)],
-    ['Moneda', entrada.moneda],
-    ['Período', textoSeguro(entrada.periodo)],
-    ['Movimientos del banco', entrada.resumen.cantidadBanco],
-    ['Movimientos de la planilla', entrada.resumen.cantidadPlanilla],
-    ['Conciliado por cantidad', entrada.resumen.porcentajeConciliadoCantidad],
-    ['Conciliado por monto', entrada.resumen.porcentajeConciliadoMonto],
-    ['Control de cierre', textoSeguro(entrada.cierre.mensaje)],
-    ['Diferencia de cierre', (entrada.cierre.diferenciaCentavos ?? 0) / 100],
-    ['Fondos de terceros', entrada.fondos.totalTercerosCentavos / 100],
-    ['Saldo en banco', (entrada.fondos.saldoBancoCentavos ?? 0) / 100],
-    ['Diferencia fondos/banco', (entrada.fondos.diferenciaCentavos ?? 0) / 100],
-    ['Generado el', entrada.generadoEl ?? new Date()],
-    ['Aviso', 'Revisar antes de usar estos resultados para hacer pagos'],
+  prepararHoja(hoja, ['Indicador', 'Valor', 'Cantidad', 'Monto']);
+  const filas: Array<{
+    indicador: string;
+    valor: string | number | Date;
+    formato?: string;
+  }> = [
+    { indicador: 'Banco', valor: textoSeguro(entrada.banco) },
+    { indicador: 'Moneda', valor: entrada.moneda },
+    { indicador: 'Período', valor: textoSeguro(entrada.periodo) },
+    { indicador: 'Movimientos del banco', valor: entrada.resumen.cantidadBanco, formato: '0' },
+    {
+      indicador: 'Movimientos de la planilla',
+      valor: entrada.resumen.cantidadPlanilla,
+      formato: '0',
+    },
+    {
+      indicador: 'Conciliado por cantidad',
+      valor: entrada.resumen.porcentajeConciliadoCantidad,
+      formato: '0.00%',
+    },
+    {
+      indicador: 'Conciliado por monto',
+      valor: entrada.resumen.porcentajeConciliadoMonto,
+      formato: '0.00%',
+    },
+    { indicador: 'Control de cierre', valor: textoSeguro(entrada.cierre.mensaje) },
+    {
+      indicador: 'Diferencia de cierre',
+      valor: (entrada.cierre.diferenciaCentavos ?? 0) / 100,
+      formato: '#,##0.00',
+    },
+    {
+      indicador: 'Fondos de terceros',
+      valor: entrada.fondos.totalTercerosCentavos / 100,
+      formato: '#,##0.00',
+    },
+    {
+      indicador: 'Saldo en banco',
+      valor: (entrada.fondos.saldoBancoCentavos ?? 0) / 100,
+      formato: '#,##0.00',
+    },
+    {
+      indicador: 'Diferencia fondos/banco',
+      valor: (entrada.fondos.diferenciaCentavos ?? 0) / 100,
+      formato: '#,##0.00',
+    },
+    {
+      indicador: 'Generado el',
+      valor: entrada.generadoEl ?? new Date(),
+      formato: 'dd/mm/yyyy hh:mm',
+    },
+    {
+      indicador: 'Aviso',
+      valor: 'Revisar antes de usar estos resultados para hacer pagos',
+    },
   ];
-  for (const [indicador, valor] of filas) hoja.addRow([textoSeguro(indicador), valor]);
-  for (const [estado, total] of Object.entries(entrada.resumen.totalesPorEstado)) {
-    hoja.addRow([
-      `Estado: ${estado}`,
-      `${total?.cantidad ?? 0} movimientos — ${(total?.centavos ?? 0) / 100}`,
-    ]);
+  for (const { indicador, valor, formato } of filas) {
+    const fila = hoja.addRow([textoSeguro(indicador), valor]);
+    if (formato) fila.getCell(2).numFmt = formato;
   }
-  hoja.getCell('B6').numFmt = '0.00%';
-  hoja.getCell('B7').numFmt = '0.00%';
-  ['B9', 'B10', 'B11', 'B12'].forEach((celda) => (hoja.getCell(celda).numFmt = '#,##0.00'));
-  hoja.getCell('B13').numFmt = 'dd/mm/yyyy hh:mm';
-  hoja.columns[0].width = 30;
+  for (const [estado, total] of Object.entries(entrada.resumen.totalesPorEstado)) {
+    const fila = hoja.addRow([
+      `Estado: ${estado}`,
+      null,
+      total?.cantidad ?? 0,
+      (total?.centavos ?? 0) / 100,
+    ]);
+    fila.getCell(3).numFmt = '0';
+    fila.getCell(4).numFmt = '#,##0.00';
+  }
+  hoja.columns[0].width = 38;
   hoja.columns[1].width = 62;
+  hoja.columns[2].width = 12;
+  hoja.columns[3].width = 18;
 }
 
 function agregarConciliados(libro: ExcelJS.Workbook, entrada: EntradaExcel): void {
@@ -249,18 +294,33 @@ function agregarSaldos(libro: ExcelJS.Workbook, entrada: EntradaExcel): void {
 function agregarReglas(libro: ExcelJS.Workbook, entrada: EntradaExcel): void {
   const hoja = libro.addWorksheet('Reglas aplicadas');
   prepararHoja(hoja, ['ID', 'Patrón', 'Acción', 'Cliente', 'Origen', 'Movimientos tocados']);
+  const aplicaciones = new Map(entrada.reglas.map((regla) => [regla.id, 0]));
+  const reglasAsignacion = entrada.reglas
+    .filter((regla) => regla.accion === 'asignar_cliente' && regla.cliente)
+    .map((regla) => ({ regla, patron: normalizarTexto(regla.patron) }));
+  for (const movimiento of entrada.movimientosBanco) {
+    const asignacion = reglasAsignacion.find(({ patron }) => movimiento.texto.includes(patron));
+    if (asignacion) {
+      aplicaciones.set(asignacion.regla.id, (aplicaciones.get(asignacion.regla.id) ?? 0) + 1);
+    }
+  }
+  const idsGastos = new Set(
+    entrada.resultados
+      .filter((resultado) => resultado.estado === 'gasto_bancario')
+      .flatMap((resultado) => resultado.banco),
+  );
+  for (const movimiento of entrada.movimientosBanco.filter((item) => idsGastos.has(item.id))) {
+    const regla = seleccionarReglaGasto(movimiento, entrada.reglas);
+    if (regla) aplicaciones.set(regla.id, (aplicaciones.get(regla.id) ?? 0) + 1);
+  }
   for (const regla of entrada.reglas) {
-    const patron = normalizarTexto(regla.patron);
-    const tocados = entrada.movimientosBanco.filter((movimiento) =>
-      movimiento.texto.includes(patron),
-    ).length;
     hoja.addRow([
       textoSeguro(regla.id),
       textoSeguro(regla.patron),
       regla.accion,
       textoSeguro(regla.cliente),
       regla.origen,
-      tocados,
+      aplicaciones.get(regla.id) ?? 0,
     ]);
   }
 }
