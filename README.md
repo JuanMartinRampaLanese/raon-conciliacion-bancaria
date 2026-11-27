@@ -2,7 +2,7 @@
 
 Conciliá el extracto del banco con tu planilla en minutos y sabé cuánta plata es de cada cliente.
 
-![CI](https://github.com/RAON/conciliacion-bancaria/actions/workflows/ci.yml/badge.svg)
+[![CI](https://github.com/JuanMartinRampaLanese/raon-conciliacion-bancaria/actions/workflows/ci.yml/badge.svg)](https://github.com/JuanMartinRampaLanese/raon-conciliacion-bancaria/actions/workflows/ci.yml)
 
 ![Demo de la conciliación](docs/demo.gif)
 
@@ -22,7 +22,7 @@ Conciliá el extracto del banco con tu planilla en minutos y sabé cuánta plata
 
 ## Demo en vivo
 
-[Enlace a la demo — completar](https://example.com)
+**[raon-conciliacion-bancaria.vercel.app](https://raon-conciliacion-bancaria.vercel.app)** — con datos inventados, sin login: tocá "Probar con datos de ejemplo".
 
 El modo demo usa únicamente los archivos inventados de `public/demo/`.
 
@@ -130,9 +130,8 @@ Vitest cubre todas las variantes regionales de la SPEC, cada paso del motor, ace
 
 **RAON** — Juan Martín Rampa Lanese (JuanMa)
 
-- Web: [completar](https://example.com)
-- LinkedIn: [completar](https://www.linkedin.com)
-- Contacto: [completar](mailto:contacto@example.com)
+- Web: [raon.uy](https://raon.uy)
+- Contacto: [contacto@raon.uy](mailto:contacto@raon.uy)
 
 ## Licencia
 
