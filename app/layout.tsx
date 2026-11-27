@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { connection } from 'next/server';
 import type { ReactNode } from 'react';
 import { ProveedorAplicacion } from '@/components/app-provider';
 import { resolverConfiguracionIA } from '@/lib/ia';
@@ -14,7 +15,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  await connection();
   const iaHabilitada = resolverConfiguracionIA() !== null;
   return (
     <html

@@ -3,6 +3,11 @@ import { crearSolicitudIA, incorporarSugerenciasIA } from '@/lib/ia/cliente';
 import { resolverConfiguracionIA } from '@/lib/ia';
 import type { DatosConciliacion } from '@/lib/worker/protocolo';
 
+const SUPABASE_VALIDA = {
+  url: 'https://raon-prueba.supabase.co',
+  clavePublica: 'sb_publishable_prueba-valida',
+};
+
 const datos = {
   movimientosBanco: [
     { id: 'B1', origen: 'banco', fecha: '2026-11-27', descripcion: 'Depósito', texto: 'deposito', centavos: 120_00, moneda: 'UYU', fila: 2, referencia: 'secreta' },
@@ -17,13 +22,21 @@ const datos = {
 
 describe('configuración de IA', () => {
   it('queda apagada por defecto y rechaza placeholders o configuración incompleta', () => {
-    expect(resolverConfiguracionIA({})).toBeNull();
-    expect(resolverConfiguracionIA({ habilitada: 'false', modelo: 'gemini-2.5-flash', claveGemini: 'real' })).toBeNull();
-    expect(resolverConfiguracionIA({ habilitada: 'true', modelo: 'modelo-falso', claveGemini: 'clave-falsa-no-usar' })).toBeNull();
+    expect(resolverConfiguracionIA({}, SUPABASE_VALIDA)).toBeNull();
+    expect(resolverConfiguracionIA({ habilitada: 'false', modelo: 'gemini-2.5-flash', claveGemini: 'real' }, SUPABASE_VALIDA)).toBeNull();
+    expect(resolverConfiguracionIA({ habilitada: 'true', modelo: 'modelo-falso', claveGemini: 'clave-falsa-no-usar' }, SUPABASE_VALIDA)).toBeNull();
+  });
+
+  it('queda apagada si falta Supabase aunque las variables de IA sean válidas', () => {
+    expect(resolverConfiguracionIA({
+      habilitada: 'true',
+      modelo: 'gemini-2.5-flash',
+      claveGemini: 'clave-prueba-valida',
+    }, null)).toBeNull();
   });
 
   it('sólo se activa con opt-in y configuración completa', () => {
-    expect(resolverConfiguracionIA({ habilitada: 'true', modelo: 'gemini-2.5-flash', claveGemini: 'clave-prueba-valida' })).toEqual({
+    expect(resolverConfiguracionIA({ habilitada: 'true', modelo: 'gemini-2.5-flash', claveGemini: 'clave-prueba-valida' }, SUPABASE_VALIDA)).toEqual({
       modelo: 'gemini-2.5-flash',
       claveGemini: 'clave-prueba-valida',
     });

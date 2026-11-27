@@ -51,7 +51,7 @@ flowchart LR
 
 Los archivos, sus bytes y los movimientos completos no se envían ni se guardan en el servidor. En modo local, reglas, plantillas y hasta 50 resúmenes agregados quedan en `localStorage`. Con Supabase configurado, esos mismos datos de configuración y totales se aíslan por organización mediante RLS; nunca se persisten extractos ni movimientos.
 
-La CSP limita conexiones del navegador a la propia aplicación y agrega el origen exacto de Supabase sólo cuando sus variables son válidas. También se envían `frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` y una `Permissions-Policy` restrictiva. CI ejecuta gitleaks y CodeQL, y Dependabot revisa npm y GitHub Actions semanalmente. El diseño toma la Ley 18.331 de Uruguay como marco de privacidad, sin afirmar certificaciones.
+La CSP usa una nonce distinta por pedido, no permite scripts inline sin esa nonce y limita conexiones del navegador a la propia aplicación; agrega el origen exacto de Supabase sólo cuando sus variables son válidas. También se envían `frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` y una `Permissions-Policy` restrictiva. CI ejecuta gitleaks y CodeQL, y Dependabot revisa npm y GitHub Actions semanalmente. El diseño toma la Ley 18.331 de Uruguay como marco de privacidad, sin afirmar certificaciones.
 
 ### Supabase opcional
 
@@ -64,11 +64,11 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 
 Aplicá en orden las migraciones de `supabase/migrations/`, agregá `/auth/callback` a las redirect URLs del proyecto y pedí el enlace desde `/cuenta`. También se admite `NEXT_PUBLIC_SUPABASE_ANON_KEY` para proyectos con clave pública legacy; nunca uses `service_role` en una variable `NEXT_PUBLIC_*`.
 
-`tests/rls.test.ts` aplica las migraciones sobre PGlite y cubre alta inicial, aislamiento, escrituras cruzadas, miembros, permisos anónimos y autoría. En un Supabase real todavía hay que probar el magic link, las redirecciones de rutas protegidas y el retorno al modo local al quitar las variables.
+`tests/rls.test.ts` aplica las migraciones sobre PGlite y cubre alta inicial, aislamiento, escrituras cruzadas, miembros, permisos anónimos, autoría, privilegios de tabla y cuota de IA. En un Supabase real todavía hay que probar el magic link, las redirecciones de rutas protegidas y el retorno al modo local al quitar las variables.
 
 ### IA opcional
 
-La IA permanece apagada con la configuración predeterminada. Para habilitar Gemini REST del lado servidor:
+La IA permanece apagada con la configuración predeterminada y no puede habilitarse sin Supabase. Para usar Gemini REST del lado servidor, configurá Supabase, iniciá sesión y definí:
 
 ```dotenv
 AI_ENABLED=true
@@ -76,7 +76,7 @@ AI_MODEL=gemini-2.5-flash
 GEMINI_API_KEY=<secreto-del-servidor>
 ```
 
-El navegador envía a `/api/ia` sólo fecha, descripción, monto y cliente de los dudosos y sus candidatos. La entrada y la salida se validan con Zod, el pedido se limita a 50 casos y se aborta a los 10 segundos. Con datos reales de clientes, usá solo un proveedor que no entrene con tus datos (plan pago). Los tests inyectan un proveedor falso y nunca llaman a Gemini ni a otro proveedor real.
+El navegador envía a `/api/ia` sólo fecha, descripción, monto y cliente de los dudosos y sus candidatos. El endpoint exige una sesión válida, permite 20 pedidos por usuario en una hora y guarda únicamente organización, usuario y fecha del consumo; nunca guarda movimientos. La entrada y la salida se validan con Zod, cada pedido se limita a 50 casos y se aborta a los 10 segundos. Configurá además un tope de gasto para la clave en Google AI Studio: la cuota de la aplicación reduce abuso, pero no reemplaza el límite del proveedor. Con datos reales de clientes, usá solo un proveedor que no entrene con tus datos (plan pago). Los tests inyectan un proveedor falso y nunca llaman a Gemini ni a otro proveedor real.
 
 Consultá [SECURITY.md](SECURITY.md) para reportar una vulnerabilidad sin exponer datos.
 
@@ -111,7 +111,7 @@ lib/motor/            cascada pura y revisión manual
 lib/cierre/           control de saldo general y fila por fila
 lib/saldos/           fondos de terceros por cliente
 lib/excel/            libro de siete hojas
-lib/ia/               contrato, Gemini REST, cliente, Zod y timeout
+lib/ia/               contrato, Gemini REST, sesión, cuota, Zod y timeout
 lib/almacen/          persistencia local o Supabase
 supabase/migrations/  esquema, RLS y permisos
 tests/                unitarios, golden, rendimiento, API, CSP y RLS

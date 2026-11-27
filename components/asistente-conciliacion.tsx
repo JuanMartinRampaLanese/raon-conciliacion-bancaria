@@ -284,7 +284,7 @@ export function AsistenteConciliacion({ cargarDemo }: { cargarDemo: boolean }) {
       {progreso ? (
         <div className="progress-wrap" aria-live="polite">
           <div className="progress-meta"><span>{progreso.mensaje}</span><span>{progreso.porcentaje}%</span></div>
-          <div className="progress-track" role="progressbar" aria-label={progreso.mensaje} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progreso.porcentaje}><div style={{ width: `${progreso.porcentaje}%` }} /></div>
+          <progress className="progress-track" aria-label={progreso.mensaje} max={100} value={progreso.porcentaje} />
         </div>
       ) : null}
 

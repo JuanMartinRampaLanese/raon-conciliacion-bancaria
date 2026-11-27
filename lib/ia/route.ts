@@ -6,6 +6,8 @@ const MAXIMO_CUERPO_BYTES = 128_000;
 interface DependenciasRutaIA {
   habilitada: boolean;
   proveedor: ProveedorIA | null;
+  autenticar: () => Promise<string | null>;
+  consumirCuota: (usuarioId: string) => Promise<boolean>;
   timeoutMs?: number;
 }
 
@@ -16,11 +18,22 @@ function respuestaError(mensaje: string, status: number): Response {
 export function crearManejadorIA({
   habilitada,
   proveedor,
+  autenticar,
+  consumirCuota,
   timeoutMs = 10_000,
 }: DependenciasRutaIA): (solicitud: Request) => Promise<Response> {
   return async (solicitud) => {
     if (!habilitada) return respuestaError('La asistencia con IA no está habilitada', 404);
     if (!proveedor) return respuestaError('La asistencia con IA no está configurada', 503);
+
+    let usuarioId: string | null;
+    try {
+      usuarioId = await autenticar();
+    } catch {
+      return respuestaError('No se pudo verificar la sesión', 503);
+    }
+    if (!usuarioId) return respuestaError('Necesitás iniciar sesión para usar la IA', 401);
+
     if (!solicitud.headers.get('content-type')?.toLowerCase().includes('application/json')) {
       return respuestaError('Enviá el contenido como JSON', 415);
     }
@@ -44,6 +57,17 @@ export function crearManejadorIA({
     const validacion = solicitudIAEsquema.safeParse(entrada);
     if (!validacion.success) {
       return respuestaError('Los casos dudosos no tienen el formato esperado', 400);
+    }
+
+    try {
+      if (!(await consumirCuota(usuarioId))) {
+        return respuestaError(
+          'Alcanzaste el límite de 20 pedidos por hora. Probá nuevamente más tarde',
+          429,
+        );
+      }
+    } catch {
+      return respuestaError('No se pudo verificar el límite de uso', 503);
     }
 
     const controlador = new AbortController();

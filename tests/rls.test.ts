@@ -125,6 +125,9 @@ describe('RLS de Supabase', () => {
       create role authenticated nologin;
       create role supabase_auth_admin nologin;
 
+      alter default privileges in schema public
+        grant all on tables to anon, authenticated;
+
       create schema auth authorization supabase_auth_admin;
       create table auth.users (
         id uuid primary key,
@@ -518,5 +521,70 @@ describe('RLS de Supabase', () => {
       ),
     );
     expect(primera(resultado.rows, 'autor falso').cantidad).toBe(0);
+  });
+
+  it('revoca TRUNCATE, REFERENCES y TRIGGER en las siete tablas', async () => {
+    const tablas = [
+      'organizaciones',
+      'miembros',
+      'cuentas',
+      'plantillas_banco',
+      'reglas',
+      'conciliaciones',
+      'uso_ia',
+    ];
+    for (const tabla of tablas) {
+      for (const privilegio of ['TRUNCATE', 'REFERENCES', 'TRIGGER']) {
+        expect(await tienePrivilegio('authenticated', tabla, privilegio), `${tabla}.${privilegio}`).toBe(false);
+      }
+    }
+  });
+
+  it('limita atómicamente a 20 pedidos por usuario y no guarda movimientos', async () => {
+    const permitidos: boolean[] = [];
+    for (let indice = 0; indice < 20; indice += 1) {
+      const resultado = await ejecutarComo('authenticated', USUARIO_A, () =>
+        base.query<{ permitido: boolean }>('select public.registrar_uso_ia() as permitido'),
+      );
+      permitidos.push(primera(resultado.rows, `uso IA ${indice + 1}`).permitido);
+    }
+    expect(permitidos).toEqual(Array.from({ length: 20 }, () => true));
+
+    const excedido = await ejecutarComo('authenticated', USUARIO_A, () =>
+      base.query<{ permitido: boolean }>('select public.registrar_uso_ia() as permitido'),
+    );
+    expect(primera(excedido.rows, 'uso IA excedido').permitido).toBe(false);
+
+    const usos = await base.query<{
+      organizacion_id: string;
+      usuario_id: string;
+      cantidad: number;
+    }>(
+      `select organizacion_id, usuario_id, count(*)::int as cantidad
+       from public.uso_ia
+       group by organizacion_id, usuario_id`,
+    );
+    expect(usos.rows).toEqual([
+      { organizacion_id: organizacionA, usuario_id: USUARIO_A, cantidad: 20 },
+    ]);
+
+    const columnas = await base.query<{ column_name: string }>(
+      `select column_name
+       from information_schema.columns
+       where table_schema = 'public' and table_name = 'uso_ia'
+       order by ordinal_position`,
+    );
+    expect(columnas.rows.map(({ column_name }) => column_name)).toEqual([
+      'uso_id',
+      'organizacion_id',
+      'usuario_id',
+      'creada_el',
+    ]);
+    const rls = await base.query<{ habilitado: boolean }>(
+      `select relrowsecurity as habilitado
+       from pg_class
+       where oid = 'public.uso_ia'::regclass`,
+    );
+    expect(primera(rls.rows, 'RLS de uso_ia').habilitado).toBe(true);
   });
 });

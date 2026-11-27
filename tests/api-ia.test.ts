@@ -25,17 +25,54 @@ function request(cuerpo: unknown): Request {
   });
 }
 
+function dependencias(
+  proveedor: ProveedorIA,
+  cambios: Partial<Parameters<typeof crearManejadorIA>[0]> = {},
+): Parameters<typeof crearManejadorIA>[0] {
+  return {
+    habilitada: true,
+    proveedor,
+    autenticar: async () => '00000000-0000-4000-8000-00000000000a',
+    consumirCuota: async () => true,
+    ...cambios,
+  };
+}
+
 describe('/api/ia', () => {
   it('apagado devuelve 404 y no llama al proveedor falso', async () => {
     const proveedor = new ProveedorIAFalso(async () => ({ sugerencias: [] }));
-    const respuesta = await crearManejadorIA({ habilitada: false, proveedor })(request({ dudosos: [dudoso] }));
+    const respuesta = await crearManejadorIA(dependencias(proveedor, { habilitada: false }))(request({ dudosos: [dudoso] }));
     expect(respuesta.status).toBe(404);
+    expect(proveedor.llamadas).toBe(0);
+  });
+
+  it('sin sesión devuelve 401 sin consumir cuota ni llamar al proveedor falso', async () => {
+    let cuotas = 0;
+    const proveedor = new ProveedorIAFalso(async () => ({ sugerencias: [] }));
+    const respuesta = await crearManejadorIA(dependencias(proveedor, {
+      autenticar: async () => null,
+      consumirCuota: async () => {
+        cuotas += 1;
+        return true;
+      },
+    }))(request({ dudosos: [dudoso] }));
+    expect(respuesta.status).toBe(401);
+    expect(cuotas).toBe(0);
+    expect(proveedor.llamadas).toBe(0);
+  });
+
+  it('al superar la cuota devuelve 429 sin llamar al proveedor falso', async () => {
+    const proveedor = new ProveedorIAFalso(async () => ({ sugerencias: [] }));
+    const respuesta = await crearManejadorIA(dependencias(proveedor, {
+      consumirCuota: async () => false,
+    }))(request({ dudosos: [dudoso] }));
+    expect(respuesta.status).toBe(429);
     expect(proveedor.llamadas).toBe(0);
   });
 
   it('rechaza más de 50 dudosos antes de invocar al proveedor', async () => {
     const proveedor = new ProveedorIAFalso(async () => ({ sugerencias: [] }));
-    const respuesta = await crearManejadorIA({ habilitada: true, proveedor })(request({ dudosos: Array.from({ length: 51 }, () => dudoso) }));
+    const respuesta = await crearManejadorIA(dependencias(proveedor))(request({ dudosos: Array.from({ length: 51 }, () => dudoso) }));
     expect(respuesta.status).toBe(400);
     expect(proveedor.llamadas).toBe(0);
   });
@@ -44,7 +81,7 @@ describe('/api/ia', () => {
     const proveedor = new ProveedorIAFalso(async () => ({
       sugerencias: [{ indice: 0, confianza: 0.88, motivo: 'Coinciden fecha y monto' }],
     }));
-    const respuesta = await crearManejadorIA({ habilitada: true, proveedor })(request({ dudosos: [dudoso] }));
+    const respuesta = await crearManejadorIA(dependencias(proveedor))(request({ dudosos: [dudoso] }));
     expect(respuesta.status).toBe(200);
     await expect(respuesta.json()).resolves.toEqual({
       sugerencias: [{ indice: 0, confianza: 0.88, motivo: 'Coinciden fecha y monto' }],
@@ -55,7 +92,7 @@ describe('/api/ia', () => {
     const proveedor = new ProveedorIAFalso(async () => ({
       sugerencias: [{ indice: 1, confianza: 0.75, motivo: 'Índice inválido para este caso' }],
     }));
-    const respuesta = await crearManejadorIA({ habilitada: true, proveedor })(request({ dudosos: [dudoso] }));
+    const respuesta = await crearManejadorIA(dependencias(proveedor))(request({ dudosos: [dudoso] }));
     expect(respuesta.status).toBe(502);
   });
 
@@ -67,7 +104,7 @@ describe('/api/ia', () => {
         rechazar(new Error('abortada'));
       });
     }));
-    const respuesta = await crearManejadorIA({ habilitada: true, proveedor, timeoutMs: 10 })(request({ dudosos: [dudoso] }));
+    const respuesta = await crearManejadorIA(dependencias(proveedor, { timeoutMs: 10 }))(request({ dudosos: [dudoso] }));
     expect(respuesta.status).toBe(504);
     expect(abortada).toBe(true);
   });

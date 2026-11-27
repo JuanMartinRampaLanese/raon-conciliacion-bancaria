@@ -1,4 +1,8 @@
 import type { RespuestaIA, SolicitudIA } from '@/lib/ia/esquemas';
+import {
+  resolverConfiguracionSupabase,
+  type ConfiguracionSupabase,
+} from '@/lib/supabase/config';
 
 export interface ProveedorIA {
   sugerir(solicitud: SolicitudIA, signal: AbortSignal): Promise<RespuestaIA>;
@@ -38,8 +42,9 @@ export function iaFueHabilitada(variables: VariablesIA = variablesIA()): boolean
 
 export function resolverConfiguracionIA(
   variables: VariablesIA = variablesIA(),
+  supabase: ConfiguracionSupabase | null = resolverConfiguracionSupabase(),
 ): ConfiguracionIA | null {
-  if (!iaFueHabilitada(variables)) return null;
+  if (!supabase || !iaFueHabilitada(variables)) return null;
   const modelo = valorUtil(variables.modelo);
   const claveGemini = valorUtil(variables.claveGemini);
   return modelo && claveGemini ? { modelo, claveGemini } : null;

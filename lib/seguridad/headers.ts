@@ -4,6 +4,7 @@ import {
 } from '../supabase/config';
 
 export interface OpcionesSeguridad {
+  nonce: string;
   supabase?: ConfiguracionSupabase | null;
   desarrollo?: boolean;
 }
@@ -15,20 +16,23 @@ function origenWebSocket(origen: string): string {
 }
 
 export function crearCsp({
+  nonce,
   supabase = resolverConfiguracionSupabase(),
   desarrollo = process.env.NODE_ENV !== 'production',
-}: OpcionesSeguridad = {}): string {
+}: OpcionesSeguridad): string {
   const conexiones = ["'self'"];
   if (supabase) {
     const origen = new URL(supabase.url).origin;
     conexiones.push(origen, origenWebSocket(origen));
   }
-  const scripts = ["'self'", "'unsafe-inline'"];
+  const scripts = ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"];
   if (desarrollo) scripts.push("'unsafe-eval'");
+  const estilos = ["'self'", `'nonce-${nonce}'`];
+  if (desarrollo) estilos.push("'unsafe-inline'");
   const directivas = [
     "default-src 'self'",
     `script-src ${scripts.join(' ')}`,
-    "style-src 'self' 'unsafe-inline'",
+    `style-src ${estilos.join(' ')}`,
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
     `connect-src ${conexiones.join(' ')}`,
@@ -46,11 +50,12 @@ export function crearCsp({
   return directivas.join('; ');
 }
 
-export function crearCabecerasSeguridad(
-  opciones: OpcionesSeguridad = {},
-): Array<{ key: string; value: string }> {
+export function generarNonce(generarUuid: () => string = () => crypto.randomUUID()): string {
+  return btoa(generarUuid());
+}
+
+export function crearCabecerasSeguridad(): Array<{ key: string; value: string }> {
   return [
-    { key: 'Content-Security-Policy', value: crearCsp(opciones) },
     { key: 'X-Content-Type-Options', value: 'nosniff' },
     { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
     { key: 'X-Frame-Options', value: 'DENY' },
