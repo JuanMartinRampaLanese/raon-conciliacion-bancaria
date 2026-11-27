@@ -24,6 +24,7 @@ it('controla saldo global y fila por fila', () => {
   const roto = controlarCierre([mov('B-0001', 100, 1_100), mov('B-0002', -50, 1_060)]);
   expect(roto.cierra).toBe(false);
   expect(roto.cortes[0].fila).toBe(2);
+  expect(roto.cortes[0].diferenciaCentavos).toBe(10);
   expect(controlarCierre([mov('B-0001', 100)]).verificado).toBe(false);
 });
 
@@ -50,4 +51,5 @@ it('calcula fondos de terceros y alerta por faltante', () => {
     pendienteCentavos: -3_000,
   });
   expect(saldos.alerta).toBe(true);
+  expect(saldos.mensaje).toBe('En el banco hay menos plata que la que se le debe a terceros');
 });

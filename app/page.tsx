@@ -25,12 +25,12 @@ function VistaProducto() {
                 <small>Banco de ejemplo</small>
                 <h3>Movimientos conciliados</h3>
               </div>
-              <strong>91,0%</strong>
+              <strong>89,6%</strong>
             </div>
             <div className="metric-row">
               <div><small>Conciliados</small><b>61</b></div>
-              <div><small>Dudosos</small><b>2</b></div>
-              <div><small>Solo banco</small><b>3</b></div>
+              <div><small>Dudosos</small><b>4</b></div>
+              <div><small>Solo banco</small><b>1</b></div>
             </div>
             <div className="mock-table">
               <div className="mock-row mock-head"><span>Movimiento</span><span>Cliente</span><span>Estado</span></div>

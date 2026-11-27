@@ -6,6 +6,7 @@ import { crearAlmacenLocal, type Almacen } from '@/lib/almacen';
 import { aceptarDudoso, calcularResumen } from '@/lib/motor';
 import { calcularSaldosPorCliente } from '@/lib/saldos';
 import { nombreArchivoExcel } from '@/lib/excel';
+import { revocarUrlConDemora } from '@/lib/descarga';
 import { pedirConciliacion, pedirExcel } from '@/lib/worker/cliente';
 import type { ArchivoBytes, DatosConciliacion } from '@/lib/worker/protocolo';
 
@@ -17,6 +18,7 @@ interface EntradaConciliacion {
   nombreBanco: string;
   moneda: Moneda;
   reglas: Regla[];
+  saldosManuales?: { inicialCentavos: number; finalCentavos: number };
 }
 
 interface Progreso {
@@ -140,7 +142,7 @@ export function ProveedorAplicacion({ children }: { children: ReactNode }) {
     enlace.href = url;
     enlace.download = nombreArchivoExcel(datos.nombreBanco, datos.moneda, datos.periodo);
     enlace.click();
-    URL.revokeObjectURL(url);
+    revocarUrlConDemora(url);
   }, [datos]);
 
   const valor = useMemo(

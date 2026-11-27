@@ -41,6 +41,7 @@ export type SolicitudWorker =
       nombreBanco: string;
       moneda: Moneda;
       reglas: Regla[];
+      saldosManuales?: { inicialCentavos: number; finalCentavos: number };
       zonaHoraria?: string;
     }
   | { tipo: 'exportar'; datos: Omit<DatosConciliacion, 'excel' | 'avisos'>; zonaHoraria?: string };

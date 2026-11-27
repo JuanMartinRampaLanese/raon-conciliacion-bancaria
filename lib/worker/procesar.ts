@@ -52,7 +52,7 @@ export async function procesarConciliacion(
     reglas: entrada.reglas,
   });
   informar(72, 'Calculando cierre y fondos de terceros');
-  const cierre = controlarCierre(banco.movimientos);
+  const cierre = controlarCierre(banco.movimientos, entrada.saldosManuales);
   const fondos = calcularSaldosPorCliente(
     planilla.movimientos,
     resultados,

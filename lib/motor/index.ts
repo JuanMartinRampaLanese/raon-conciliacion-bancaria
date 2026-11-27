@@ -59,6 +59,14 @@ function compararTexto(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+function sugerenciaSoloBanco(movimiento: Movimiento): string {
+  return movimiento.centavos > 0
+    ? 'Ingreso sin registrar en la planilla: ¿falta cargarlo?'
+    : Math.abs(movimiento.centavos) < 100_000
+      ? '¿Gasto bancario? Podés crear una regla'
+      : 'Egreso del banco sin movimiento en la planilla';
+}
+
 function ordenarMovimientos(a: Movimiento, b: Movimiento): number {
   return (
     compararTexto(a.fecha, b.fecha) ||
@@ -520,12 +528,7 @@ export function conciliar(entrada: {
       planilla: [],
       diferenciaCentavos: movimientoBanco.centavos,
       puntaje: 0,
-      nota:
-        movimientoBanco.centavos > 0
-          ? 'Ingreso sin registrar en la planilla: ¿falta cargarlo?'
-          : Math.abs(movimientoBanco.centavos) < 100_000
-            ? '¿Gasto bancario? Podés crear una regla'
-            : 'Egreso del banco sin movimiento en la planilla',
+      nota: sugerenciaSoloBanco(movimientoBanco),
     });
   }
   const ultimaFechaBanco = banco
@@ -578,9 +581,56 @@ export function aceptarDudoso(entrada: {
   const reemplazo = resultadoCruce([movimientoBanco], movimientosPlanilla, 'manual');
   reemplazo.id = original.id;
   reemplazo.nota = 'Conciliado manualmente';
-  const resultados = entrada.resultados.map((resultado) =>
-    resultado.id === original.id ? reemplazo : { ...resultado },
+  const idsAceptados = new Set(candidato.planilla);
+  const bancoPorId = new Map(entrada.banco.map((movimiento) => [movimiento.id, movimiento]));
+  const planillaPorId = new Map(
+    entrada.planilla.map((movimiento) => [movimiento.id, movimiento]),
   );
+  const resultados = entrada.resultados.flatMap((resultado): Resultado[] => {
+    if (resultado.id === original.id) return [reemplazo];
+    if (resultado.estado === 'solo_planilla') {
+      const idsRestantes = resultado.planilla.filter((id) => !idsAceptados.has(id));
+      if (idsRestantes.length === 0) return [];
+      return [
+        {
+          ...resultado,
+          planilla: idsRestantes,
+          diferenciaCentavos: -idsRestantes.reduce(
+            (total, id) => total + (planillaPorId.get(id)?.centavos ?? 0),
+            0,
+          ),
+        },
+      ];
+    }
+    if (resultado.estado !== 'dudoso') return [{ ...resultado }];
+
+    const candidatos = (resultado.candidatos ?? []).filter((posible) =>
+      posible.planilla.every((id) => !idsAceptados.has(id)),
+    );
+    if (candidatos.length > 0) {
+      return [{ ...resultado, candidatos, sugerenciaIA: undefined }];
+    }
+
+    const bancoRestante = resultado.banco
+      .map((id) => bancoPorId.get(id))
+      .filter((movimiento): movimiento is Movimiento => Boolean(movimiento));
+    const primero = bancoRestante[0];
+    return [
+      {
+        ...resultado,
+        estado: 'solo_banco',
+        paso: undefined,
+        candidatos: undefined,
+        sugerenciaIA: undefined,
+        diferenciaCentavos: bancoRestante.reduce(
+          (total, movimiento) => total + movimiento.centavos,
+          0,
+        ),
+        puntaje: 0,
+        nota: primero ? sugerenciaSoloBanco(primero) : resultado.nota,
+      },
+    ];
+  });
   const cliente = movimientosPlanilla[0]?.cliente;
   const patron = palabrasUtiles(movimientoBanco.texto)
     .filter((palabra) => !/^\d{7,}$/.test(palabra))

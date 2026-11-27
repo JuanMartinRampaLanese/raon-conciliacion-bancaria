@@ -7,19 +7,9 @@ import { useAplicacion } from '@/components/app-provider';
 import { pedirPrevisualizacion } from '@/lib/worker/cliente';
 import type { ArchivoBytes, PrevisualizacionArchivo } from '@/lib/worker/protocolo';
 import { interpretarFilas } from '@/lib/vista-previa';
-
-const CAMPOS: Array<{ clave: keyof MapeoColumnas; etiqueta: string }> = [
-  { clave: 'fecha', etiqueta: 'Fecha' },
-  { clave: 'descripcion', etiqueta: 'Descripción' },
-  { clave: 'importe', etiqueta: 'Importe con signo' },
-  { clave: 'debito', etiqueta: 'Débito' },
-  { clave: 'credito', etiqueta: 'Crédito' },
-  { clave: 'saldo', etiqueta: 'Saldo' },
-  { clave: 'cliente', etiqueta: 'Cliente' },
-  { clave: 'referencia', etiqueta: 'Referencia' },
-  { clave: 'moneda', etiqueta: 'Moneda' },
-  { clave: 'tipo', etiqueta: 'Tipo' },
-];
+import { CAMPOS_MAPEO } from '@/lib/mapeo';
+import { parsearMonto } from '@/lib/normalizar';
+import { formatearFechaPantalla } from '@/lib/presentacion';
 
 async function archivoDesdeFile(archivo: File): Promise<ArchivoBytes> {
   return { nombre: archivo.name, bytes: new Uint8Array(await archivo.arrayBuffer()) };
@@ -54,7 +44,7 @@ function VistaMapeo({
     <section className="mapping-card" aria-labelledby={`mapeo-${origen}`}>
       <h2 id={`mapeo-${origen}`}>{titulo}</h2>
       <div className="mapping-list">
-        {CAMPOS.filter(({ clave }) =>
+        {CAMPOS_MAPEO.filter(({ clave }) =>
           origen === 'banco' ? clave !== 'tipo' : clave !== 'saldo',
         ).map(({ clave, etiqueta }) => (
           <label className="mapping-row" key={clave}>
@@ -76,7 +66,7 @@ function VistaMapeo({
               <tr key={fila.fila}>
                 <td>{fila.fila}</td>
                 <td>{String(fila.fechaCruda ?? '')}</td>
-                <td className={fila.error ? 'interpreted-error' : 'interpreted'}>{fila.error ?? fila.fecha}</td>
+                <td className={fila.error ? 'interpreted-error' : 'interpreted'}>{fila.error ?? formatearFechaPantalla(fila.fecha)}</td>
                 <td>{String(fila.montoCrudo ?? '')}</td>
                 <td className={fila.error ? 'interpreted-error' : 'interpreted'}>
                   {fila.centavos === undefined ? '—' : formatoMonto.format(fila.centavos / 100)}
@@ -104,6 +94,8 @@ export function AsistenteConciliacion({ cargarDemo }: { cargarDemo: boolean }) {
   const [mapeoPlanilla, setMapeoPlanilla] = useState<MapeoColumnas>({});
   const [plantillas, setPlantillas] = useState<PlantillaBanco[]>([]);
   const [plantillaId, setPlantillaId] = useState('');
+  const [saldoInicial, setSaldoInicial] = useState('');
+  const [saldoFinal, setSaldoFinal] = useState('');
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
   const demoIniciado = useRef(false);
@@ -180,6 +172,16 @@ export function AsistenteConciliacion({ cargarDemo }: { cargarDemo: boolean }) {
     setError('');
     setCargando(true);
     try {
+      const haySaldoManual = saldoInicial.trim() || saldoFinal.trim();
+      if (haySaldoManual && (!saldoInicial.trim() || !saldoFinal.trim())) {
+        throw new Error('Completá el saldo inicial y el saldo final, o dejá ambos vacíos');
+      }
+      const saldosManuales = haySaldoManual
+        ? {
+            inicialCentavos: parsearMonto(saldoInicial),
+            finalCentavos: parsearMonto(saldoFinal),
+          }
+        : undefined;
       const reglas = await almacen.listarReglas();
       const plantilla: PlantillaBanco = {
         id: plantillaId || nombrePlantilla(nombreBanco),
@@ -187,7 +189,7 @@ export function AsistenteConciliacion({ cargarDemo }: { cargarDemo: boolean }) {
         mapeo: mapeoBanco,
       };
       await almacen.guardarPlantilla(plantilla);
-      await conciliar({ banco, planilla, mapeoBanco, mapeoPlanilla, nombreBanco: nombreBanco.trim(), moneda, reglas });
+      await conciliar({ banco, planilla, mapeoBanco, mapeoPlanilla, nombreBanco: nombreBanco.trim(), moneda, reglas, saldosManuales });
       router.push('/resultado');
     } catch (causa) {
       setError(causa instanceof Error ? causa.message : 'No se pudo completar la conciliación');
@@ -259,10 +261,24 @@ export function AsistenteConciliacion({ cargarDemo }: { cargarDemo: boolean }) {
       ) : null}
 
       {paso === 3 && vistaBanco && vistaPlanilla ? (
-        <div className="mapping-grid">
-          <VistaMapeo titulo={`Extracto · ${vistaBanco.totalFilas} filas`} vista={vistaBanco} mapeo={mapeoBanco} moneda={moneda} origen="banco" alCambiar={(campo, valor) => setMapeoBanco((actual) => ({ ...actual, [campo]: valor || undefined }))} />
-          <VistaMapeo titulo={`Planilla · ${vistaPlanilla.totalFilas} filas`} vista={vistaPlanilla} mapeo={mapeoPlanilla} moneda={moneda} origen="planilla" alCambiar={(campo, valor) => setMapeoPlanilla((actual) => ({ ...actual, [campo]: valor || undefined }))} />
-        </div>
+        <>
+          {!mapeoBanco.saldo ? (
+            <section className="manual-balances" aria-labelledby="saldos-manuales-titulo">
+              <div>
+                <h2 id="saldos-manuales-titulo">Saldos del extracto (opcional)</h2>
+                <p>Completá ambos para verificar el cierre si el archivo no incluye una columna de saldo.</p>
+              </div>
+              <div className="form-grid">
+                <label className="field"><span>Saldo inicial</span><input inputMode="decimal" value={saldoInicial} onChange={(evento) => setSaldoInicial(evento.target.value)} placeholder="Ej.: 50.000,00" /></label>
+                <label className="field"><span>Saldo final</span><input inputMode="decimal" value={saldoFinal} onChange={(evento) => setSaldoFinal(evento.target.value)} placeholder="Ej.: 125.430,00" /></label>
+              </div>
+            </section>
+          ) : null}
+          <div className="mapping-grid">
+            <VistaMapeo titulo={`Extracto · ${vistaBanco.totalFilas} filas`} vista={vistaBanco} mapeo={mapeoBanco} moneda={moneda} origen="banco" alCambiar={(campo, valor) => setMapeoBanco((actual) => ({ ...actual, [campo]: valor || undefined }))} />
+            <VistaMapeo titulo={`Planilla · ${vistaPlanilla.totalFilas} filas`} vista={vistaPlanilla} mapeo={mapeoPlanilla} moneda={moneda} origen="planilla" alCambiar={(campo, valor) => setMapeoPlanilla((actual) => ({ ...actual, [campo]: valor || undefined }))} />
+          </div>
+        </>
       ) : null}
 
       {progreso ? (

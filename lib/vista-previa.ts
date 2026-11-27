@@ -14,6 +14,19 @@ function valor(fila: FilaCruda, columna: string | undefined): unknown {
   return columna ? fila.valores[columna] : '';
 }
 
+function tieneValor(valorCrudo: unknown): boolean {
+  return String(valorCrudo ?? '').trim().length > 0;
+}
+
+function montoCrudoDe(fila: FilaCruda, mapeo: MapeoColumnas): unknown {
+  if (mapeo.importe) return valor(fila, mapeo.importe);
+  const debito = valor(fila, mapeo.debito);
+  const credito = valor(fila, mapeo.credito);
+  if (tieneValor(debito)) return `Débito ${String(debito)}`;
+  if (tieneValor(credito)) return `Crédito ${String(credito)}`;
+  return '';
+}
+
 export function interpretarFilas(entrada: {
   filas: FilaCruda[];
   mapeo: MapeoColumnas;
@@ -21,11 +34,7 @@ export function interpretarFilas(entrada: {
   moneda: Moneda;
 }): FilaInterpretada[] {
   return entrada.filas.slice(0, 10).map((fila) => {
-    const montoCrudo = entrada.mapeo.importe
-      ? valor(fila, entrada.mapeo.importe)
-      : `${String(valor(fila, entrada.mapeo.debito) ?? '')} / ${String(
-          valor(fila, entrada.mapeo.credito) ?? '',
-        )}`;
+    const montoCrudo = montoCrudoDe(fila, entrada.mapeo);
     try {
       const resultado = normalizarFilas({ ...entrada, filas: [fila] });
       const movimiento = resultado.movimientos[0];

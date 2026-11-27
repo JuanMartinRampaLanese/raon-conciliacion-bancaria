@@ -103,8 +103,11 @@ describe('cascada del motor', () => {
   });
 
   it('crea dudoso por pago parcial usando similitud y permite aceptarlo', () => {
-    const banco = [m('B-0001', 'banco', '2026-10-01', 100_000, 'TRF Hotel')];
-    const planilla = [m('P-0001', 'planilla', '2026-10-01', 200_000, 'Alquiler', 'Hotel')];
+    const banco = [
+      m('B-0001', 'banco', '2026-10-01', 100_000, 'TRF Hotel'),
+      m('B-0002', 'banco', '2026-10-02', 100_000, 'TRF Hotel'),
+    ];
+    const planilla = [m('P-0001', 'planilla', '2026-10-01', 250_000, 'Alquiler', 'Hotel')];
     const inicial = correr(banco, planilla);
     const dudoso = inicial.resultados.find((r) => r.estado === 'dudoso')!;
     expect(dudoso.candidatos?.[0].motivo).toContain('Posible pago parcial');
@@ -117,6 +120,17 @@ describe('cascada del motor', () => {
     });
     expect(manual.resultados.find((r) => r.id === dudoso.id)?.paso).toBe('manual');
     expect(manual.reglaSugerida?.cliente).toBe('Hotel');
+    expect(manual.resumen.soloPlanilla).toBe(inicial.resumen.soloPlanilla - 1);
+    expect(
+      manual.resultados.filter(
+        (resultado) =>
+          resultado.planilla.includes('P-0001') ||
+          resultado.candidatos?.some((candidato) => candidato.planilla.includes('P-0001')),
+      ),
+    ).toHaveLength(1);
+    expect(manual.resultados.find((resultado) => resultado.banco.includes('B-0002'))?.estado).toBe(
+      'solo_banco',
+    );
   });
 
   it('reconoce el nombre en cualquier orden y es puro/determinístico', () => {

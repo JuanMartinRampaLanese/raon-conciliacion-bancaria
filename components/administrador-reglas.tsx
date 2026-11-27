@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useAplicacion } from '@/components/app-provider';
-import type { MapeoColumnas, PlantillaBanco, Regla } from '@/lib/dominio';
-
-const CAMPOS: Array<keyof MapeoColumnas> = ['fecha', 'descripcion', 'importe', 'debito', 'credito', 'saldo', 'cliente', 'referencia', 'moneda', 'tipo'];
+import type { PlantillaBanco, Regla } from '@/lib/dominio';
+import { CAMPOS_MAPEO } from '@/lib/mapeo';
 
 export function AdministradorReglas() {
   const { almacen } = useAplicacion();
@@ -73,7 +72,7 @@ export function AdministradorReglas() {
               <div className="button-row"><button className="button button-primary button-small" type="button" onClick={() => void guardarPlantilla(plantilla)}>Guardar</button><button className="button button-danger button-small" type="button" onClick={() => void almacen.borrarPlantilla(plantilla.id).then(recargar)}>Borrar</button></div>
             </div>
             <div className="template-mapping">
-              {CAMPOS.map((campo) => <label className="field" key={campo}><span>{campo}</span><input value={plantilla.mapeo[campo] ?? ''} onChange={(evento) => setPlantillas((actual) => actual.map((item) => item.id === plantilla.id ? { ...item, mapeo: { ...item.mapeo, [campo]: evento.target.value || undefined } } : item))} /></label>)}
+              {CAMPOS_MAPEO.map(({ clave, etiqueta }) => <label className="field" key={clave}><span>{etiqueta}</span><input value={plantilla.mapeo[clave] ?? ''} onChange={(evento) => setPlantillas((actual) => actual.map((item) => item.id === plantilla.id ? { ...item, mapeo: { ...item.mapeo, [clave]: evento.target.value || undefined } } : item))} /></label>)}
             </div>
           </article>
         ))}
