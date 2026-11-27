@@ -40,7 +40,7 @@
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
-    "eslint": "^9.39.1",
+    "eslint": "^10.15.0",
     "eslint-config-next": "16.4.6",
     "prettier": "^3.6.2",
     "tsx": "^4.20.6",
