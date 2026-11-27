@@ -47,6 +47,13 @@ Antes de terminar, tienen que pasar npm run lint, npm run typecheck, npm test y 
 Marcá en SPEC.md los ítems de la Fase 3 que quedaron hechos y escribí en "Registro de avances" qué hiciste, qué decidiste y qué tengo que probar a mano.
 ```
 
+### Correcciones de la revisión de la Fase 3 (antes de la Fase 4)
+```
+Leé AGENTS.md y SPEC.md completos. Implementá SOLO los ítems de "Correcciones de la revisión (2026-11-27)" de la Fase 3 en SPEC.md. Los permisos van en una migración nueva, sin editar la anterior. El test de RLS con PGlite tiene que cubrir los 7 casos de la SPEC y fallar si se vuelven a abrir los permisos.
+Antes de terminar, tienen que pasar npm run lint, npm run typecheck, npm test, npm run build y npm audit sin vulnerabilidades.
+Marcá en SPEC.md los ítems que quedaron hechos y escribí en "Registro de avances" qué hiciste, qué decidiste y qué tengo que probar a mano.
+```
+
 ### Fase 4 — IA opcional, seguridad y pulido
 ```
 Leé AGENTS.md y SPEC.md completos. Implementá SOLO la Fase 4 de SPEC.md.

@@ -76,6 +76,15 @@ export interface Resumen {
   totalesPorEstado: Partial<Record<Estado, { cantidad: number; centavos: number }>>;
 }
 
+export interface ResumenGuardado extends Resumen {
+  id?: string;
+  nombreBanco?: string;
+  moneda?: Moneda;
+  periodo?: string;
+  cierreOk?: boolean | null;
+  creadoEl?: string;
+}
+
 export interface PlantillaBanco {
   id: string;
   banco: string;

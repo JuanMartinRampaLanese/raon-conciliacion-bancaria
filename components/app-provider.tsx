@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import type { MapeoColumnas, Moneda, Regla } from '@/lib/dominio';
-import { crearAlmacenLocal, type Almacen } from '@/lib/almacen';
+import { crearAlmacen, type Almacen } from '@/lib/almacen';
 import { aceptarDudoso, calcularResumen } from '@/lib/motor';
 import { calcularSaldosPorCliente } from '@/lib/saldos';
 import { nombreArchivoExcel } from '@/lib/excel';
@@ -39,7 +39,7 @@ interface ContextoAplicacion {
 const Contexto = createContext<ContextoAplicacion | null>(null);
 
 export function ProveedorAplicacion({ children }: { children: ReactNode }) {
-  const almacen = useMemo(() => crearAlmacenLocal(), []);
+  const almacen = useMemo(() => crearAlmacen(), []);
   const [datos, setDatos] = useState<DatosConciliacion | null>(null);
   const [progreso, setProgreso] = useState<Progreso | null>(null);
 
@@ -55,7 +55,14 @@ export function ProveedorAplicacion({ children }: { children: ReactNode }) {
         (porcentaje, mensaje) => setProgreso({ porcentaje, mensaje }),
       );
       setDatos(resultado);
-      await almacen.guardarResumen(resultado.resumen);
+      await almacen.guardarResumen({
+        ...resultado.resumen,
+        nombreBanco: resultado.nombreBanco,
+        moneda: resultado.moneda,
+        periodo: resultado.periodo,
+        cierreOk: resultado.cierre.cierra,
+        creadoEl: new Date().toISOString(),
+      });
       return resultado;
     } finally {
       setProgreso(null);

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { supabaseEstaConfigurado } from '@/lib/supabase/config';
 
 export function Marca() {
   return (
@@ -11,6 +12,7 @@ export function Marca() {
 }
 
 export function Cabecera() {
+  const modoCuenta = supabaseEstaConfigurado();
   return (
     <header className="site-header nav">
       <div className="wrap nav-bar">
@@ -19,6 +21,8 @@ export function Cabecera() {
         <nav className="nav-links" aria-label="Navegación principal">
           <Link href="/conciliar">Conciliar</Link>
           <Link href="/reglas">Reglas</Link>
+          {modoCuenta ? <Link href="/historial">Historial</Link> : null}
+          {modoCuenta ? <Link href="/cuenta">Cuenta</Link> : null}
         </nav>
         <Link className="button button-primary button-small" href="/conciliar">
           Nueva conciliación
@@ -29,6 +33,7 @@ export function Cabecera() {
 }
 
 export function Pie() {
+  const modoCuenta = supabaseEstaConfigurado();
   return (
     <footer className="site-footer closing">
       <div className="wrap">
@@ -39,7 +44,7 @@ export function Pie() {
         <div className="closing-links">
           <div className="footer-grid">
             <div><Marca /><p>Conciliación bancaria para fondos de terceros.</p></div>
-            <nav aria-label="Navegación del pie"><Link href="/conciliar">Nueva conciliación</Link><Link href="/reglas">Reglas y plantillas</Link></nav>
+            <nav aria-label="Navegación del pie"><Link href="/conciliar">Nueva conciliación</Link><Link href="/reglas">Reglas y plantillas</Link>{modoCuenta ? <Link href="/historial">Historial</Link> : null}</nav>
           </div>
           <p className="footer-legal">© 2026 RAON. Todos los derechos reservados.</p>
         </div>

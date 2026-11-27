@@ -1,8 +1,8 @@
 import type { Almacen } from '@/lib/almacen';
-import type { PlantillaBanco, Regla, Resumen } from '@/lib/dominio';
+import type { PlantillaBanco, Regla, ResumenGuardado } from '@/lib/dominio';
 import { REGLAS_GASTOS_PREDETERMINADAS } from '@/lib/motor';
 
-interface AlmacenClaveValor {
+export interface AlmacenClaveValor {
   getItem(clave: string): string | null;
   setItem(clave: string, valor: string): void;
 }
@@ -41,7 +41,7 @@ export function crearAlmacenLocal(almacen?: AlmacenClaveValor): Almacen {
     almacen ?? (typeof window !== 'undefined' ? (window.localStorage as AlmacenClaveValor) : undefined);
   let reglasMemoria = leer(destino, CLAVES.reglas, copiarReglasIniciales());
   let plantillasMemoria = leer<PlantillaBanco[]>(destino, CLAVES.plantillas, []);
-  let resumenesMemoria = leer<Resumen[]>(destino, CLAVES.resumenes, []);
+  let resumenesMemoria = leer<ResumenGuardado[]>(destino, CLAVES.resumenes, []);
 
   return {
     async listarReglas() {
