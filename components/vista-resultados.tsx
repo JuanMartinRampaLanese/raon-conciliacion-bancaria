@@ -8,6 +8,7 @@ import { ETIQUETAS_ESTADO } from '@/lib/excel';
 import { clientesUnicos, formatearFechaPantalla } from '@/lib/presentacion';
 
 const ESTADOS: Estado[] = ['conciliado', 'conciliado_con_diferencia', 'dudoso', 'gasto_bancario', 'solo_banco', 'solo_planilla'];
+type Mensaje = { tipo: 'exito' | 'error'; texto: string };
 
 function moneda(centavos: number, codigo: string): string {
   return new Intl.NumberFormat('es-UY', {
@@ -25,12 +26,21 @@ function movimientosDe(resultado: Resultado, banco: Map<string, Movimiento>, pla
 }
 
 export function VistaResultados() {
-  const { datos, aceptar, rechazar, descargar, almacen } = useAplicacion();
+  const {
+    datos,
+    aceptar,
+    rechazar,
+    descargar,
+    almacen,
+    iaHabilitada,
+    iaCargando,
+    pedirSugerencias,
+  } = useAplicacion();
   const [pestana, setPestana] = useState<Estado | 'todos'>('todos');
   const [busqueda, setBusqueda] = useState('');
   const [signo, setSigno] = useState('todos');
   const [reglaSugerida, setReglaSugerida] = useState<Regla | null>(null);
-  const [mensaje, setMensaje] = useState('');
+  const [mensaje, setMensaje] = useState<Mensaje | null>(null);
   const reglaSugeridaRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -72,23 +82,49 @@ export function VistaResultados() {
   const guardarRegla = async () => {
     if (!reglaSugerida) return;
     await almacen.guardarRegla(reglaSugerida);
-    setMensaje('Regla guardada en este navegador.');
+    setMensaje({ tipo: 'exito', texto: 'Regla guardada.' });
     setReglaSugerida(null);
   };
 
   const aceptarCandidato = (resultadoId: string, indice: number) => {
     const sugerida = aceptar(resultadoId, indice);
     setReglaSugerida(sugerida ?? null);
-    setMensaje(sugerida ? '' : 'Movimiento conciliado manualmente.');
+    setMensaje(sugerida ? null : { tipo: 'exito', texto: 'Movimiento conciliado manualmente.' });
   };
 
   const descargarArchivo = async () => {
     try {
-      setMensaje('Preparando el Excel…');
+      setMensaje({ tipo: 'exito', texto: 'Preparando el Excel…' });
       await descargar();
-      setMensaje('Excel descargado.');
+      setMensaje({ tipo: 'exito', texto: 'Excel descargado.' });
     } catch (causa) {
-      setMensaje(causa instanceof Error ? causa.message : 'No se pudo descargar el Excel');
+      setMensaje({
+        tipo: 'error',
+        texto:
+          causa instanceof Error
+            ? causa.message
+            : 'No se pudo descargar el Excel. Intentá nuevamente.',
+      });
+    }
+  };
+
+  const consultarIA = async () => {
+    setMensaje(null);
+    try {
+      await pedirSugerencias();
+      setPestana('dudoso');
+      setMensaje({
+        tipo: 'exito',
+        texto: 'Sugerencias listas. Revisalas antes de aceptar un candidato.',
+      });
+    } catch (causa) {
+      setMensaje({
+        tipo: 'error',
+        texto:
+          causa instanceof Error
+            ? causa.message
+            : 'La IA no pudo generar sugerencias. Continuá con la revisión manual.',
+      });
     }
   };
 
@@ -119,17 +155,44 @@ export function VistaResultados() {
           {datos.cierre.cortes.length > 0 ? <><p>El saldo se corta en:</p><ul>{datos.cierre.cortes.map((corte) => <li key={corte.fila}>Fila {corte.fila}: informado {moneda(corte.informadoCentavos, datos.moneda)}, esperado {moneda(corte.esperadoCentavos, datos.moneda)} (diferencia {moneda(corte.diferenciaCentavos, datos.moneda)}).</li>)}</ul></> : null}
         </section>
       ) : datos.cierre.cierra === null ? <div className="warning-box" role="status">Cierre sin verificar. Informá saldos o mapeá la columna de saldo en una nueva conciliación.</div> : null}
-      {datos.fondos.alerta ? <div className="error-box" role="alert">En el banco hay menos plata que la que se le debe a terceros</div> : null}
-      {mensaje ? <div className="success-box" aria-live="polite">{mensaje}</div> : null}
+      {datos.fondos.alerta ? <div className="error-box" role="alert">En el banco hay menos dinero que el adeudado a terceros. Revisá los saldos antes de pagar.</div> : null}
+      {mensaje ? (
+        <div
+          className={mensaje.tipo === 'error' ? 'error-box' : 'success-box'}
+          role={mensaje.tipo === 'error' ? 'alert' : 'status'}
+          aria-live="polite"
+        >
+          {mensaje.texto}
+        </div>
+      ) : null}
       {reglaSugerida ? (
         <section className="rule-suggestion" aria-labelledby="regla-sugerida-titulo" ref={reglaSugeridaRef} tabIndex={-1}>
           <h2 id="regla-sugerida-titulo">Guardar una regla para la próxima vez</h2>
           <p>Podés editar el patrón antes de guardarlo. Se aplicará cuando el texto del banco lo contenga.</p>
           <div className="form-grid">
-            <label className="field"><span>Patrón</span><input value={reglaSugerida.patron} onChange={(evento) => setReglaSugerida({ ...reglaSugerida, patron: evento.target.value })} /></label>
-            <label className="field"><span>Cliente</span><input value={reglaSugerida.cliente ?? ''} onChange={(evento) => setReglaSugerida({ ...reglaSugerida, cliente: evento.target.value })} /></label>
+            <label className="field"><span>Patrón</span><input name="patron-regla" autoComplete="off" value={reglaSugerida.patron} onChange={(evento) => setReglaSugerida({ ...reglaSugerida, patron: evento.target.value })} /></label>
+            <label className="field"><span>Cliente</span><input name="cliente-regla" autoComplete="off" value={reglaSugerida.cliente ?? ''} onChange={(evento) => setReglaSugerida({ ...reglaSugerida, cliente: evento.target.value })} /></label>
           </div>
           <div className="button-row"><button className="button button-primary" type="button" onClick={() => void guardarRegla()}>Guardar regla</button><button className="button button-secondary" type="button" onClick={() => setReglaSugerida(null)}>Ahora no</button></div>
+        </section>
+      ) : null}
+
+      {iaHabilitada && datos.resumen.dudosos > 0 ? (
+        <section className="ai-assistant" aria-labelledby="asistente-ia-titulo">
+          <div>
+            <p className="eyebrow">Asistencia opcional</p>
+            <h2 id="asistente-ia-titulo">Sugerir candidatos con IA</h2>
+            <p>La IA sólo propone: cada movimiento seguirá como dudoso hasta que lo revises.</p>
+            <p className="ai-provider-warning">Con datos reales de clientes, usá solo un proveedor que no entrene con tus datos (plan pago)</p>
+          </div>
+          <button
+            className="button button-secondary"
+            type="button"
+            disabled={iaCargando}
+            onClick={() => void consultarIA()}
+          >
+            {iaCargando ? 'Consultando IA…' : 'Pedir sugerencias a la IA'}
+          </button>
         </section>
       ) : null}
 
@@ -141,15 +204,15 @@ export function VistaResultados() {
         <button className="button button-primary" type="button" onClick={() => void descargarArchivo()}>Descargar Excel <span aria-hidden="true">↓</span></button>
       </div>
 
-      <div className="tabs" role="tablist" aria-label="Estados de la conciliación">
-        <button className="tab" role="tab" aria-selected={pestana === 'todos'} onClick={() => setPestana('todos')}>Todos ({datos.resultados.length})</button>
+      <div className="tabs" role="group" aria-label="Filtrar por estado de la conciliación">
+        <button className="tab" type="button" aria-pressed={pestana === 'todos'} onClick={() => setPestana('todos')}>Todos ({datos.resultados.length})</button>
         {ESTADOS.map((estado) => (
-          <button className="tab" role="tab" aria-selected={pestana === estado} onClick={() => setPestana(estado)} key={estado}>{ETIQUETAS_ESTADO[estado]} ({datos.resultados.filter((item) => item.estado === estado).length})</button>
+          <button className="tab" type="button" aria-pressed={pestana === estado} onClick={() => setPestana(estado)} key={estado}>{ETIQUETAS_ESTADO[estado]} ({datos.resultados.filter((item) => item.estado === estado).length})</button>
         ))}
       </div>
       <div className="results-filters">
-        <label className="field"><span>Buscar</span><input className="search-input" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Descripción, cliente o referencia" /></label>
-        <label className="field"><span>Tipo de movimiento</span><select className="filter-select" value={signo} onChange={(evento) => setSigno(evento.target.value)}><option value="todos">Ingresos y egresos</option><option value="ingresos">Ingresos</option><option value="egresos">Egresos</option></select></label>
+        <label className="field"><span>Buscar</span><input className="search-input" type="search" name="buscar-movimientos" autoComplete="off" spellCheck={false} value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Ej.: alquiler, cliente o referencia…" /></label>
+        <label className="field"><span>Tipo de movimiento</span><select className="filter-select" name="tipo-movimiento" autoComplete="off" value={signo} onChange={(evento) => setSigno(evento.target.value)}><option value="todos">Ingresos y egresos</option><option value="ingresos">Ingresos</option><option value="egresos">Egresos</option></select></label>
       </div>
 
       {pestana === 'dudoso' ? (
@@ -161,12 +224,23 @@ export function VistaResultados() {
                 <h3>{movimiento?.descripcion ?? resultado.id}</h3>
                 <p className="mono">{movimiento ? moneda(movimiento.centavos, datos.moneda) : '—'} · {formatearFechaPantalla(movimiento?.fecha)}</p>
                 <p>{resultado.nota}</p>
+                {resultado.sugerenciaIA ? (
+                  <div className="ai-suggestion" role="status">
+                    <strong>
+                      {resultado.sugerenciaIA.indice === null
+                        ? 'La IA no recomienda ningún candidato'
+                        : `La IA sugiere el candidato ${resultado.sugerenciaIA.indice + 1}`}
+                    </strong>
+                    <span>{new Intl.NumberFormat('es-UY', { style: 'percent', maximumFractionDigits: 0 }).format(resultado.sugerenciaIA.confianza)} de confianza</span>
+                    <p>{resultado.sugerenciaIA.motivo}</p>
+                  </div>
+                ) : null}
                 {(resultado.candidatos ?? []).map((candidato, indice) => {
                   const candidatos = candidato.planilla.map((id) => planilla.get(id)).filter((item): item is Movimiento => Boolean(item));
                   return (
-                    <div className="candidate" key={`${resultado.id}-${indice}`}>
+                    <div className={`candidate ${resultado.sugerenciaIA?.indice === indice ? 'ai-recommended' : ''}`} key={`${resultado.id}-${indice}`}>
                       <div><strong>{candidatos.map((item) => item.descripcion).join(' + ')}</strong><p>{clientesUnicos(candidatos) === '—' ? 'Sin cliente' : clientesUnicos(candidatos)}</p><p>{candidato.motivo}</p></div>
-                      <div className="candidate-actions"><button className="button button-primary button-small" type="button" onClick={() => aceptarCandidato(resultado.id, indice)}>Aceptar</button></div>
+                      <div className="candidate-actions"><button className="button button-primary button-small" type="button" aria-label={`Aceptar candidato ${indice + 1}: ${candidatos.map((item) => item.descripcion).join(' + ')}`} onClick={() => aceptarCandidato(resultado.id, indice)}>Aceptar</button></div>
                     </div>
                   );
                 })}
@@ -178,7 +252,7 @@ export function VistaResultados() {
       ) : (
         <div className="table-scroll">
           <table className="data-table">
-            <thead><tr><th>Estado</th><th>Fecha</th><th>Descripción</th><th>Cliente</th><th>Monto</th><th>Nota</th></tr></thead>
+            <thead><tr><th scope="col">Estado</th><th scope="col">Fecha</th><th scope="col">Descripción</th><th scope="col">Cliente</th><th scope="col">Monto</th><th scope="col">Nota</th></tr></thead>
             <tbody>
               {resultados.map((resultado) => {
                 const movimientos = movimientosDe(resultado, banco, planilla);
@@ -193,7 +267,7 @@ export function VistaResultados() {
 
       <h2 className="section-subtitle">Fondos por cliente</h2>
       <p>Fondos de terceros: {moneda(datos.fondos.totalTercerosCentavos, datos.moneda)} · Saldo en banco: {datos.fondos.saldoBancoCentavos === undefined ? 'sin informar' : moneda(datos.fondos.saldoBancoCentavos, datos.moneda)} · Diferencia: {datos.fondos.diferenciaCentavos === undefined ? 'sin calcular' : moneda(datos.fondos.diferenciaCentavos, datos.moneda)}</p>
-      <div className="table-scroll funds-table"><table className="data-table"><thead><tr><th>Cliente</th><th>Cobrado</th><th>Pagado</th><th>Saldo</th><th>Conciliado</th><th>Pendiente</th></tr></thead><tbody>{datos.fondos.clientes.map((cliente) => <tr key={cliente.cliente}><td>{cliente.cliente}</td><td className="mono">{moneda(cliente.cobradoCentavos, datos.moneda)}</td><td className="mono">{moneda(cliente.pagadoCentavos, datos.moneda)}</td><td className="mono">{moneda(cliente.saldoCentavos, datos.moneda)}</td><td className="mono">{moneda(cliente.conciliadoCentavos, datos.moneda)}</td><td className="mono">{moneda(cliente.pendienteCentavos, datos.moneda)}</td></tr>)}</tbody></table></div>
+      <div className="table-scroll funds-table"><table className="data-table"><thead><tr><th scope="col">Cliente</th><th scope="col">Cobrado</th><th scope="col">Pagado</th><th scope="col">Saldo</th><th scope="col">Conciliado</th><th scope="col">Pendiente</th></tr></thead><tbody>{datos.fondos.clientes.map((cliente) => <tr key={cliente.cliente}><td>{cliente.cliente}</td><td className="mono">{moneda(cliente.cobradoCentavos, datos.moneda)}</td><td className="mono">{moneda(cliente.pagadoCentavos, datos.moneda)}</td><td className="mono">{moneda(cliente.saldoCentavos, datos.moneda)}</td><td className="mono">{moneda(cliente.conciliadoCentavos, datos.moneda)}</td><td className="mono">{moneda(cliente.pendienteCentavos, datos.moneda)}</td></tr>)}</tbody></table></div>
     </div>
   );
 }

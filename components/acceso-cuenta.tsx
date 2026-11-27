@@ -89,14 +89,14 @@ export function AccesoCuenta({
           <p>No necesitás contraseña. Si es tu primer ingreso, se crea tu organización y quedás como dueño.</p>
           <label className="field">
             <span>Email</span>
-            <input type="email" autoComplete="email" required value={email} onChange={(evento) => setEmail(evento.target.value)} />
+            <input name="email" type="email" autoComplete="email" spellCheck={false} required value={email} onChange={(evento) => setEmail(evento.target.value)} />
           </label>
           <button className="button button-primary" type="submit" disabled={enviando}>
             {enviando ? 'Enviando…' : 'Enviarme el enlace'}
           </button>
         </form>
       )}
-      {mensaje ? <div className={mensaje.startsWith('No pudimos') ? 'error-box' : 'success-box'} role="status">{mensaje}</div> : null}
+      {mensaje ? <div className={mensaje.startsWith('No pudimos') ? 'error-box' : 'success-box'} role={mensaje.startsWith('No pudimos') ? 'alert' : 'status'}>{mensaje}</div> : null}
     </section>
   );
 }

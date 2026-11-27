@@ -9,6 +9,7 @@ import { nombreArchivoExcel } from '@/lib/excel';
 import { revocarUrlConDemora } from '@/lib/descarga';
 import { pedirConciliacion, pedirExcel } from '@/lib/worker/cliente';
 import type { ArchivoBytes, DatosConciliacion } from '@/lib/worker/protocolo';
+import { solicitarSugerenciasIA } from '@/lib/ia/cliente';
 
 interface EntradaConciliacion {
   banco: ArchivoBytes;
@@ -29,19 +30,29 @@ interface Progreso {
 interface ContextoAplicacion {
   datos: DatosConciliacion | null;
   progreso: Progreso | null;
+  iaHabilitada: boolean;
+  iaCargando: boolean;
   almacen: Almacen;
   conciliar(entrada: EntradaConciliacion): Promise<DatosConciliacion>;
   aceptar(resultadoId: string, indiceCandidato: number): Regla | undefined;
   rechazar(resultadoId: string): void;
+  pedirSugerencias(): Promise<void>;
   descargar(): Promise<void>;
 }
 
 const Contexto = createContext<ContextoAplicacion | null>(null);
 
-export function ProveedorAplicacion({ children }: { children: ReactNode }) {
+export function ProveedorAplicacion({
+  children,
+  iaHabilitada = false,
+}: {
+  children: ReactNode;
+  iaHabilitada?: boolean;
+}) {
   const almacen = useMemo(() => crearAlmacen(), []);
   const [datos, setDatos] = useState<DatosConciliacion | null>(null);
   const [progreso, setProgreso] = useState<Progreso | null>(null);
+  const [iaCargando, setIaCargando] = useState(false);
 
   const conciliar = useCallback(async (entrada: EntradaConciliacion) => {
     setProgreso({ porcentaje: 2, mensaje: 'Preparando archivos' });
@@ -120,6 +131,17 @@ export function ProveedorAplicacion({ children }: { children: ReactNode }) {
     [datos],
   );
 
+  const pedirSugerencias = useCallback(async () => {
+    if (!iaHabilitada || !datos) return;
+    setIaCargando(true);
+    try {
+      const resultados = await solicitarSugerenciasIA(datos);
+      setDatos({ ...datos, resultados, excel: new Uint8Array() });
+    } finally {
+      setIaCargando(false);
+    }
+  }, [datos, iaHabilitada]);
+
   const descargar = useCallback(async () => {
     if (!datos) throw new Error('Todavía no hay una conciliación para descargar');
     const excel =
@@ -153,8 +175,30 @@ export function ProveedorAplicacion({ children }: { children: ReactNode }) {
   }, [datos]);
 
   const valor = useMemo(
-    () => ({ datos, progreso, almacen, conciliar, aceptar, rechazar, descargar }),
-    [datos, progreso, almacen, conciliar, aceptar, rechazar, descargar],
+    () => ({
+      datos,
+      progreso,
+      iaHabilitada,
+      iaCargando,
+      almacen,
+      conciliar,
+      aceptar,
+      rechazar,
+      pedirSugerencias,
+      descargar,
+    }),
+    [
+      datos,
+      progreso,
+      iaHabilitada,
+      iaCargando,
+      almacen,
+      conciliar,
+      aceptar,
+      rechazar,
+      pedirSugerencias,
+      descargar,
+    ],
   );
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }

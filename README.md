@@ -4,96 +4,136 @@ Conciliá el extracto del banco con tu planilla en minutos y sabé cuánta plata
 
 ![CI](https://github.com/RAON/conciliacion-bancaria/actions/workflows/ci.yml/badge.svg)
 
-La aplicación incluye lectura de CSV/XLSX, normalización regional, motor de cruce determinístico,
-control de cierre, saldos de terceros, Excel de siete hojas, una CLI y una interfaz web completa
-que procesa todo en un Web Worker.
+![Demo de la conciliación](docs/demo.gif)
 
-## Privacidad
+## El problema
 
-El núcleo recibe bytes y no usa red ni base de datos. La interfaz procesa los archivos en el
-navegador. No se guardan movimientos ni extractos. En modo local, reglas, plantillas y resúmenes
-quedan en `localStorage`; con Supabase configurado, se guardan por organización las reglas,
-plantillas y los totales agregados de cada conciliación. El diseño toma la Ley 18.331 de Uruguay
-como marco, sin afirmar certificaciones.
+- Los bancos y las planillas exportan fechas, importes y encabezados con formatos distintos.
+- Un cruce manual consume horas y puede usar dos veces el mismo movimiento o esconder una diferencia.
+- Quien administra fondos de terceros necesita explicar qué concilió, qué falta y cuánto pertenece a cada cliente.
+
+### Qué hace
+
+- Lee CSV y XLSX, detecta columnas y muestra cómo interpretó fechas e importes antes de conciliar.
+- Cruza movimientos con una cascada determinística de exactos, tolerancias, agrupaciones y reglas.
+- Señala dudosos, faltantes, gastos bancarios y cortes en el saldo para revisión humana.
+- Calcula fondos por cliente y compara el total adeudado a terceros con el saldo bancario.
+- Genera un Excel auditable de siete hojas, con filas originales, motivos, estados y reglas aplicadas.
+
+## Demo en vivo
+
+[Enlace a la demo — completar](https://example.com)
+
+El modo demo usa únicamente los archivos inventados de `public/demo/`.
+
+## Cómo funciona
+
+```mermaid
+flowchart LR
+  A[CSV/XLSX del banco y la planilla] --> B[Lectura y normalización en el navegador]
+  B --> C[Cascada determinística de conciliación]
+  C --> D[Revisión humana de dudosos]
+  D --> E[Reglas reutilizables]
+  D --> F[Excel de siete hojas]
+  C --> G[Control de cierre y fondos por cliente]
+  G --> F
+```
+
+## Decisiones técnicas
+
+- **Procesamiento en el navegador:** los archivos y movimientos se leen en un Web Worker y permanecen en memoria; el route handler de IA nunca recibe archivos.
+- **Montos en centavos:** el dominio usa enteros para evitar errores de coma flotante y recién formatea al mostrar o exportar.
+- **Motor determinístico:** cada movimiento se consume una sola vez, el orden no depende del idioma del sistema y los casos límite tienen tests unitarios, golden, de determinismo y rendimiento.
+- **IA que sólo sugiere:** está apagada por defecto, analiza como máximo 50 dudosos con datos mínimos y nunca cambia el estado ni acepta un candidato por su cuenta.
+- **Reglas que aprenden de la revisión:** al aceptar un dudoso, la persona puede guardar un patrón editable para próximas conciliaciones.
+
+## Seguridad y privacidad
+
+Los archivos, sus bytes y los movimientos completos no se envían ni se guardan en el servidor. En modo local, reglas, plantillas y hasta 50 resúmenes agregados quedan en `localStorage`. Con Supabase configurado, esos mismos datos de configuración y totales se aíslan por organización mediante RLS; nunca se persisten extractos ni movimientos.
+
+La CSP limita conexiones del navegador a la propia aplicación y agrega el origen exacto de Supabase sólo cuando sus variables son válidas. También se envían `frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` y una `Permissions-Policy` restrictiva. CI ejecuta gitleaks y CodeQL, y Dependabot revisa npm y GitHub Actions semanalmente. El diseño toma la Ley 18.331 de Uruguay como marco de privacidad, sin afirmar certificaciones.
+
+### Supabase opcional
+
+Sin estas variables, o con los placeholders de `.env.example`, la app funciona igual en modo local y no muestra login:
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://<proyecto>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+```
+
+Aplicá en orden las migraciones de `supabase/migrations/`, agregá `/auth/callback` a las redirect URLs del proyecto y pedí el enlace desde `/cuenta`. También se admite `NEXT_PUBLIC_SUPABASE_ANON_KEY` para proyectos con clave pública legacy; nunca uses `service_role` en una variable `NEXT_PUBLIC_*`.
+
+`tests/rls.test.ts` aplica las migraciones sobre PGlite y cubre alta inicial, aislamiento, escrituras cruzadas, miembros, permisos anónimos y autoría. En un Supabase real todavía hay que probar el magic link, las redirecciones de rutas protegidas y el retorno al modo local al quitar las variables.
+
+### IA opcional
+
+La IA permanece apagada con la configuración predeterminada. Para habilitar Gemini REST del lado servidor:
+
+```dotenv
+AI_ENABLED=true
+AI_MODEL=gemini-2.5-flash
+GEMINI_API_KEY=<secreto-del-servidor>
+```
+
+El navegador envía a `/api/ia` sólo fecha, descripción, monto y cliente de los dudosos y sus candidatos. La entrada y la salida se validan con Zod, el pedido se limita a 50 casos y se aborta a los 10 segundos. Con datos reales de clientes, usá solo un proveedor que no entrene con tus datos (plan pago). Los tests inyectan un proveedor falso y nunca llaman a Gemini ni a otro proveedor real.
+
+Consultá [SECURITY.md](SECURITY.md) para reportar una vulnerabilidad sin exponer datos.
 
 ## Correr localmente
 
-    npm ci
-    npm run conciliar -- --banco test-data/banco.csv --planilla test-data/planilla.csv --moneda UYU
-    npm run dev
+```bash
+npm ci
+npm run conciliar -- --banco test-data/banco.csv --planilla test-data/planilla.csv --moneda UYU
+npm run dev
+```
 
-El comando imprime el resumen y deja el archivo generado en salida/. Podés indicar el nombre que
-se muestra en el Resumen y en el archivo con `--nombre-banco "BROU"`. Para un formato no detectado,
-podés agregar `--mapeo mapeo.json` con objetos banco y planilla.
+La CLI imprime el resumen y genera el Excel en `salida/`; la web queda en `http://localhost:3000`. Todo `test-data/` es inventado: probá también `banco_formato_b.xlsx` y `banco_saldo_roto.csv`. Para cargar la demo desde la interfaz, definí `NEXT_PUBLIC_DEMO_MODE=true`; no hace falta configurar Supabase ni IA.
 
-Para mostrar el banner de demo y cargar los archivos ficticios desde la interfaz, copiá
-`.env.example` a `.env.local`, definí `NEXT_PUBLIC_DEMO_MODE=true` y reiniciá `npm run dev`.
+La verificación completa se ejecuta con:
 
-Sin `NEXT_PUBLIC_SUPABASE_URL` y una clave pública válida, la aplicación mantiene el mismo modo
-local sin login. Los placeholders de `.env.example` también se consideran configuración ausente.
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm audit
+```
 
-## Configurar Supabase
+## Estructura y cobertura
 
-1. Creá un proyecto y aplicá, en orden, todas las migraciones de `supabase/migrations/` con Supabase CLI (`supabase db push`) o desde el SQL Editor.
-2. En **Authentication → URL Configuration**, agregá `http://localhost:3000/auth/callback` y la URL equivalente del deploy a las redirect URLs permitidas.
-3. Definí estas variables en `.env.local` y reiniciá el servidor:
+```text
+app/                  rutas, endpoint de IA y cabeceras Next.js
+components/           asistente, resultados, cuenta, reglas e historial
+lib/lectura/          CSV/XLSX y detección de encabezados
+lib/normalizar/       fechas, montos, texto, moneda y orden
+lib/motor/            cascada pura y revisión manual
+lib/cierre/           control de saldo general y fila por fila
+lib/saldos/           fondos de terceros por cliente
+lib/excel/            libro de siete hojas
+lib/ia/               contrato, Gemini REST, cliente, Zod y timeout
+lib/almacen/          persistencia local o Supabase
+supabase/migrations/  esquema, RLS y permisos
+tests/                unitarios, golden, rendimiento, API, CSP y RLS
+```
 
-       NEXT_PUBLIC_SUPABASE_URL=https://<proyecto>.supabase.co
-       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+Vitest cubre todas las variantes regionales de la SPEC, cada paso del motor, aceptación de dudosos, cierre, saldos, Excel, Web Worker, almacenamiento, RLS real con PGlite, IA con proveedor falso y CSP condicional. GitHub Actions ejecuta lint, TypeScript, la suite y el build en cada push y pull request.
 
-   También se admite `NEXT_PUBLIC_SUPABASE_ANON_KEY` para proyectos que todavía usan la clave
-   pública legacy. Nunca uses la `service_role` en variables `NEXT_PUBLIC_*`.
-4. Entrá a `/cuenta`, pedí el magic link y abrilo en el mismo navegador. En el primer ingreso se
-   crea una organización, el usuario queda con rol `owner` y se cargan las reglas bancarias
-   predeterminadas.
+## Roadmap
 
-La migración habilita RLS en `organizaciones`, `miembros`, `cuentas`, `plantillas_banco`, `reglas`
-y `conciliaciones`. Todas las consultas de la aplicación llevan `organizacion_id`; las políticas
-comprueban la membresía con `auth.uid()`.
+- Leer extractos PDF a partir de muestras reales de cada banco.
+- Conectar directamente con bancos.
+- Invitar a más miembros a una organización.
+- Integrar el sistema de cobranza para avisar pagos automáticamente.
 
-### Verificación automática de RLS
+## Autor
 
-`tests/rls.test.ts` levanta Postgres en memoria con PGlite, crea el esquema `auth` mínimo de
-Supabase y aplica todas las migraciones en orden. Sus siete casos prueban el alta inicial, el
-aislamiento entre organizaciones, las escrituras cruzadas, la administración de miembros, los
-permisos anónimos y la autoría de las conciliaciones. También comprueba los `GRANT` efectivos para
-fallar si vuelven a abrirse permisos.
+**RAON** — Juan Martín Rampa Lanese (JuanMa)
 
-    npm test -- tests/rls.test.ts
+- Web: [completar](https://example.com)
+- LinkedIn: [completar](https://www.linkedin.com)
+- Contacto: [completar](mailto:contacto@example.com)
 
-### Pruebas manuales restantes
+## Licencia
 
-1. En un proyecto Supabase real, pedí el enlace desde `/cuenta`, abrilo en el mismo navegador y
-   confirmá que vuelve a `/historial` con la sesión activa.
-2. Cerrá sesión y visitá directamente `/conciliar`, `/reglas`, `/resultado` y `/historial`: con
-   Supabase configurado deben redirigir a `/cuenta` y conservar el destino después del login.
-3. Quitá `NEXT_PUBLIC_SUPABASE_URL` y la clave pública, reiniciá la aplicación y verificá que las
-   rutas abren sin login, y que reglas, plantillas y resúmenes siguen usando `localStorage`.
-
-## Deploy en Vercel
-
-1. Importá el repositorio en Vercel y elegí el preset **Next.js**.
-2. Usá Node.js 20 o superior. Los comandos predeterminados (`npm ci` y `npm run build`) son suficientes.
-3. Si el deploy es una demo pública, agregá `NEXT_PUBLIC_DEMO_MODE=true` en **Project Settings → Environment Variables** para Production, Preview y Development.
-4. Para habilitar cuentas, agregá `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; si las omitís, el deploy conserva el modo local.
-5. Desplegá y probá `/`, `/cuenta`, `/conciliar`, `/resultado`, `/reglas` y `/historial`. La navegación directa a `/resultado` sin una conciliación muestra el estado vacío esperado.
-
-Vercel sirve la aplicación Next.js; ningún route handler recibe los archivos. Las variables con
-prefijo `NEXT_PUBLIC_` quedan incluidas en el build, por lo que un cambio requiere un nuevo deploy.
-
-## Verificación
-
-    npm run lint
-    npm run typecheck
-    npm test
-    npm run build
-    npm audit
-
-Los datos de test-data/ y public/demo/ son completamente inventados.
-
-## Autor y licencia
-
-RAON — Juan Martín Rampa Lanese (JuanMa). Web, LinkedIn y contacto: marcadores a completar.
-
-© 2026 RAON. Todos los derechos reservados. El código se publica para mostrar el trabajo; para
-usarlo en tu negocio, contactanos.
+© 2026 RAON. Todos los derechos reservados. El código se publica para mostrar el trabajo; para usarlo en tu negocio, contactanos.

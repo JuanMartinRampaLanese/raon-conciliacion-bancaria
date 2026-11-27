@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { ProveedorAplicacion } from '@/components/app-provider';
+import { resolverConfiguracionIA } from '@/lib/ia';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const iaHabilitada = resolverConfiguracionIA() !== null;
   return (
     <html
       lang="es-UY"
@@ -23,7 +25,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       data-buttons="arrow"
     >
       <body>
-        <ProveedorAplicacion>{children}</ProveedorAplicacion>
+        <ProveedorAplicacion iaHabilitada={iaHabilitada}>{children}</ProveedorAplicacion>
       </body>
     </html>
   );

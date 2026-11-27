@@ -49,7 +49,7 @@ function VistaMapeo({
         ).map(({ clave, etiqueta }) => (
           <label className="mapping-row" key={clave}>
             <span>{etiqueta}</span>
-            <select value={mapeo[clave] ?? ''} onChange={(evento) => alCambiar(clave, evento.target.value)}>
+            <select name={`mapeo-${origen}-${clave}`} autoComplete="off" value={mapeo[clave] ?? ''} onChange={(evento) => alCambiar(clave, evento.target.value)}>
               <option value="">No usar</option>
               {vista.encabezados.map((encabezado) => (
                 <option value={encabezado} key={encabezado}>{encabezado}</option>
@@ -60,7 +60,7 @@ function VistaMapeo({
       </div>
       <div className="table-scroll">
         <table className="preview-table">
-          <thead><tr><th>Fila</th><th>Fecha cruda</th><th>Fecha interpretada</th><th>Monto crudo</th><th>Monto interpretado</th></tr></thead>
+          <thead><tr><th scope="col">Fila</th><th scope="col">Fecha cruda</th><th scope="col">Fecha interpretada</th><th scope="col">Monto crudo</th><th scope="col">Monto interpretado</th></tr></thead>
           <tbody>
             {filas.map((fila) => (
               <tr key={fila.fila}>
@@ -221,7 +221,7 @@ export function AsistenteConciliacion({ cargarDemo }: { cargarDemo: boolean }) {
         <div className="form-grid">
           <div className="field field-full file-drop">
             <label htmlFor="archivo-banco">Extracto bancario (.csv o .xlsx)</label>
-            <input id="archivo-banco" type="file" accept=".csv,.xlsx,.xls" onChange={(evento) => {
+            <input id="archivo-banco" name="archivo-banco" type="file" accept=".csv,.xlsx,.xls" onChange={(evento) => {
               const archivo = evento.target.files?.[0];
               if (archivo) void archivoDesdeFile(archivo).then(setBanco);
             }} />
@@ -229,17 +229,17 @@ export function AsistenteConciliacion({ cargarDemo }: { cargarDemo: boolean }) {
           </div>
           <label className="field">
             <span>Banco o cuenta</span>
-            <input value={nombreBanco} onChange={(evento) => setNombreBanco(evento.target.value)} placeholder="Ej.: BROU alquileres" />
+            <input name="nombre-banco" autoComplete="off" value={nombreBanco} onChange={(evento) => setNombreBanco(evento.target.value)} placeholder="Ej.: BROU alquileres…" />
           </label>
           <label className="field">
             <span>Moneda</span>
-            <select value={moneda} onChange={(evento) => setMoneda(evento.target.value as Moneda)}>
+            <select name="moneda" autoComplete="off" value={moneda} onChange={(evento) => setMoneda(evento.target.value as Moneda)}>
               <option value="UYU">Pesos uruguayos (UYU)</option><option value="USD">Dólares (USD)</option><option value="ARS">Pesos argentinos (ARS)</option><option value="EUR">Euros (EUR)</option>
             </select>
           </label>
           <label className="field field-full">
             <span>Plantilla guardada</span>
-            <select value={plantillaId} onChange={(evento) => cambiarPlantilla(evento.target.value)}>
+            <select name="plantilla-banco" autoComplete="off" value={plantillaId} onChange={(evento) => cambiarPlantilla(evento.target.value)}>
               <option value="">Detectar columnas automáticamente</option>
               {plantillas.map((plantilla) => <option value={plantilla.id} key={plantilla.id}>{plantilla.banco}</option>)}
             </select>
@@ -251,7 +251,7 @@ export function AsistenteConciliacion({ cargarDemo }: { cargarDemo: boolean }) {
         <div className="form-grid">
           <div className="field field-full file-drop">
             <label htmlFor="archivo-planilla">Planilla del negocio (.csv o .xlsx)</label>
-            <input id="archivo-planilla" type="file" accept=".csv,.xlsx,.xls" onChange={(evento) => {
+            <input id="archivo-planilla" name="archivo-planilla" type="file" accept=".csv,.xlsx,.xls" onChange={(evento) => {
               const archivo = evento.target.files?.[0];
               if (archivo) void archivoDesdeFile(archivo).then(setPlanilla);
             }} />
@@ -269,8 +269,8 @@ export function AsistenteConciliacion({ cargarDemo }: { cargarDemo: boolean }) {
                 <p>Completá ambos para verificar el cierre si el archivo no incluye una columna de saldo.</p>
               </div>
               <div className="form-grid">
-                <label className="field"><span>Saldo inicial</span><input inputMode="decimal" value={saldoInicial} onChange={(evento) => setSaldoInicial(evento.target.value)} placeholder="Ej.: 50.000,00" /></label>
-                <label className="field"><span>Saldo final</span><input inputMode="decimal" value={saldoFinal} onChange={(evento) => setSaldoFinal(evento.target.value)} placeholder="Ej.: 125.430,00" /></label>
+                <label className="field"><span>Saldo inicial</span><input name="saldo-inicial" autoComplete="off" inputMode="decimal" value={saldoInicial} onChange={(evento) => setSaldoInicial(evento.target.value)} placeholder="Ej.: 50.000,00…" /></label>
+                <label className="field"><span>Saldo final</span><input name="saldo-final" autoComplete="off" inputMode="decimal" value={saldoFinal} onChange={(evento) => setSaldoFinal(evento.target.value)} placeholder="Ej.: 125.430,00…" /></label>
               </div>
             </section>
           ) : null}
@@ -284,7 +284,7 @@ export function AsistenteConciliacion({ cargarDemo }: { cargarDemo: boolean }) {
       {progreso ? (
         <div className="progress-wrap" aria-live="polite">
           <div className="progress-meta"><span>{progreso.mensaje}</span><span>{progreso.porcentaje}%</span></div>
-          <div className="progress-track" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progreso.porcentaje}><div style={{ width: `${progreso.porcentaje}%` }} /></div>
+          <div className="progress-track" role="progressbar" aria-label={progreso.mensaje} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progreso.porcentaje}><div style={{ width: `${progreso.porcentaje}%` }} /></div>
         </div>
       ) : null}
 

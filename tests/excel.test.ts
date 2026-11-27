@@ -2,8 +2,28 @@ import ExcelJS from 'exceljs';
 import { expect, it } from 'vitest';
 import type { Movimiento, Regla, Resultado, Resumen } from '@/lib/dominio';
 import { controlarCierre } from '@/lib/cierre';
-import { generarExcel, nombreArchivoExcel } from '@/lib/excel';
+import { generarExcel, nombreArchivoExcel, textoSugerenciaIA } from '@/lib/excel';
 import { calcularSaldosPorCliente } from '@/lib/saldos';
+
+it('describe en el Excel el candidato, confianza y motivo sugeridos por IA', () => {
+  const resultado = {
+    id: 'R-IA',
+    estado: 'dudoso',
+    banco: ['B-IA'],
+    planilla: [],
+    diferenciaCentavos: 0,
+    puntaje: 0.8,
+    nota: 'Revisar',
+    sugerenciaIA: { indice: 1, confianza: 0.87, motivo: 'Coinciden monto y cliente' },
+  } satisfies Resultado;
+  expect(textoSugerenciaIA(resultado)).toBe(
+    'Candidato 2 · 87% · Coinciden monto y cliente',
+  );
+  expect(textoSugerenciaIA({
+    ...resultado,
+    sugerenciaIA: { indice: null, confianza: 0.42, motivo: 'No hay evidencia suficiente' },
+  })).toBe('Ningún candidato · 42% · No hay evidencia suficiente');
+});
 
 it('genera siete hojas, fechas reales y ningún valor fórmula', async () => {
   const banco: Movimiento[] = [

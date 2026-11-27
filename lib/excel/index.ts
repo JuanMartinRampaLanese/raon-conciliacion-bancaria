@@ -39,6 +39,18 @@ export const ETIQUETAS_ESTADO: Record<Estado, string> = {
   solo_planilla: 'Solo en planilla',
 };
 
+export function textoSugerenciaIA(resultado: Resultado): string {
+  const sugerencia = resultado.sugerenciaIA;
+  if (!sugerencia) return '';
+  const seleccion =
+    sugerencia.indice === null ? 'Ningún candidato' : `Candidato ${sugerencia.indice + 1}`;
+  const confianza = new Intl.NumberFormat('es-UY', {
+    style: 'percent',
+    maximumFractionDigits: 0,
+  }).format(sugerencia.confianza);
+  return `${seleccion} · ${confianza} · ${sugerencia.motivo}`;
+}
+
 export function fechaHoraLocalExcel(instante: Date, zonaHoraria?: string): Date {
   const zona = zonaHoraria || Intl.DateTimeFormat().resolvedOptions().timeZone;
   try {
@@ -281,7 +293,7 @@ function agregarDudosos(libro: ExcelJS.Workbook, entrada: EntradaExcel): void {
         textoSeguro(ps.map((m) => `${m.id}: ${m.descripcion}`).join(' | ')),
         candidato.puntaje,
         textoSeguro(candidato.motivo),
-        textoSeguro(resultado.sugerenciaIA?.motivo),
+        textoSeguro(textoSugerenciaIA(resultado)),
       ]);
     }
   }

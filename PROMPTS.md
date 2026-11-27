@@ -63,7 +63,9 @@ Marcá en SPEC.md los ítems de la Fase 4 que quedaron hechos y escribí en "Reg
 
 ### Auditoría de seguridad (después de la Fase 4)
 ```
-Hacé una auditoría de seguridad del repo: buscá secretos o datos reales commiteados (también en el historial de git), corré npm audit y revisá la validación de entradas, las políticas RLS de Supabase, el uso de la service_role, los encabezados de seguridad y que la IA esté apagada por defecto. Arreglá lo que encuentres y anotá en el registro lo que no se pudo arreglar.
+Leé AGENTS.md y SPEC.md completos. Implementá SOLO los ítems de "Auditoría de seguridad (2026-11-27)" de SPEC.md. Los cambios de base van en migraciones nuevas, sin editar las anteriores. Cada corrección lleva su test.
+Antes de terminar, tienen que pasar npm run lint, npm run typecheck, npm test, npm run build y npm audit sin vulnerabilidades. Probá en el navegador, en producción, que la demo completa funcione sin errores de CSP en la consola.
+Marcá en SPEC.md los ítems que quedaron hechos y escribí en "Registro de avances" qué hiciste, qué decidiste y qué tengo que probar a mano.
 ```
 
 ## Al final
