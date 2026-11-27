@@ -19,6 +19,13 @@ Antes de terminar, tienen que pasar npm run lint, npm run typecheck, npm test y 
 Marcá en SPEC.md los ítems de la Fase 1 que quedaron hechos y escribí en "Registro de avances" qué hiciste, qué decidiste y qué tengo que probar a mano.
 ```
 
+### Correcciones de la revisión de la Fase 1 (antes de la Fase 2)
+```
+Leé AGENTS.md y SPEC.md completos. Implementá SOLO los ítems de "Correcciones de la revisión (2026-11-24)" de la Fase 1 en SPEC.md. Cada corrección lleva su test.
+Antes de terminar, tienen que pasar npm run lint, npm run typecheck, npm test, npm run build y npm audit sin vulnerabilidades. Volvé a generar el Excel con la CLI y revisá la hoja Resumen.
+Marcá en SPEC.md los ítems que quedaron hechos y escribí en "Registro de avances" qué hiciste, qué decidiste y qué tengo que probar a mano.
+```
+
 ### Fase 2 — Interfaz web sin backend
 ```
 Leé AGENTS.md y SPEC.md completos. Implementá SOLO la Fase 2 de SPEC.md.

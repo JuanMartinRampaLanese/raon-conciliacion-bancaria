@@ -113,7 +113,7 @@ interface ConfigMotor {
   ventanaDias: number;          // 3
   ventanaAgrupadoDias: number;  // 7
   toleranciaPct: number;        // 0.01
-  toleranciaMaxCentavos: number;// 5000 (50 unidades)
+  toleranciaMaxCentavos: number;// 50000 (500 unidades): con 50 no entraban los casos obligatorios de $ 150 de comisión
   similitudMin: number;         // 0.6
   maxAgrupados: number;         // 3
   puntajeMinDudoso: number;     // 0.4
@@ -332,17 +332,26 @@ En español, con este orden:
 ## 19. Fases
 
 ### Fase 1 — Motor, Excel y consola
-- [ ] Proyecto Next.js + TypeScript strict + Tailwind + shadcn/ui + Vitest + ESLint + Prettier
-- [ ] `.gitignore`, `.env.example`, `SECURITY.md`, README inicial
-- [ ] CI (lint, typecheck, test, build), gitleaks, CodeQL y Dependabot
-- [ ] `lib/lectura`: CSV y XLSX → filas crudas; detección de encabezados por sinónimos
-- [ ] `lib/normalizar`: fechas, montos en centavos, textos, orden y moneda
-- [ ] `lib/motor`: cascada completa (pasos 0 a 7) y revisión manual
-- [ ] `lib/cierre` y `lib/saldos`
-- [ ] `lib/excel`: las 7 hojas con formato
-- [ ] `test-data/` completo con `esperado.json` escrito a mano
-- [ ] Tests: normalización, cada paso, golden, determinismo, rendimiento, Excel sin fórmulas
-- [ ] CLI `npm run conciliar -- --banco ... --planilla ... --moneda UYU [--mapeo mapeo.json]` que imprime el resumen y genera el Excel en `salida/` (carpeta en `.gitignore`)
+- [x] Proyecto Next.js + TypeScript strict + Tailwind + shadcn/ui + Vitest + ESLint + Prettier
+- [x] `.gitignore`, `.env.example`, `SECURITY.md`, README inicial
+- [x] CI (lint, typecheck, test, build), gitleaks, CodeQL y Dependabot
+- [x] `lib/lectura`: CSV y XLSX → filas crudas; detección de encabezados por sinónimos
+- [x] `lib/normalizar`: fechas, montos en centavos, textos, orden y moneda
+- [x] `lib/motor`: cascada completa (pasos 0 a 7) y revisión manual
+- [x] `lib/cierre` y `lib/saldos`
+- [x] `lib/excel`: las 7 hojas con formato
+- [x] `test-data/` completo con `esperado.json` escrito a mano
+- [x] Tests: normalización, cada paso, golden, determinismo, rendimiento, Excel sin fórmulas
+- [x] CLI `npm run conciliar -- --banco ... --planilla ... --moneda UYU [--mapeo mapeo.json]` que imprime el resumen y genera el Excel en `salida/` (carpeta en `.gitignore`)
+
+#### Correcciones de la revisión (2026-11-24)
+- [ ] Excel, hoja **Resumen**: los formatos quedaron corridos una fila (se asignan por dirección de celda). Hoy "Movimientos de la planilla" sale como `6700,00 %`, "Diferencia fondos/banco" como la fecha `03/06/1921` y "Generado el" con formato `mm-dd-yy`. Asignar el formato según el indicador, no según la celda. Los totales por estado van en columnas aparte (cantidad y monto con `#,##0.00`), no como texto ("57 movimientos — 598750"). Test que abra el Excel y verifique el formato de cada fila del Resumen.
+- [ ] Pago parcial (paso 6, caso 7 de `test-data`): el motivo "Posible pago parcial: faltan $ X" solo aparece si una regla le asignó cliente al movimiento del banco. Tiene que usar el mismo criterio de cliente que los pasos 3 y 4 (regla **o** similitud ≥ `similitudMin` con el cliente de la planilla). Hoy el caso 7 sale con el motivo genérico "47% de coincidencia". Agregar al test golden la verificación del motivo de ese caso.
+- [ ] `totalesPorEstado.solo_planilla` da 0 centavos: sumar los montos de la planilla.
+- [ ] Si varias reglas `gasto_bancario` coinciden, se aplica la más específica (el patrón más largo): hoy "IVA COMISION" se atribuye a la regla "COMISION". La hoja "Reglas aplicadas" cuenta solo la regla que se aplicó (hoy cuenta todas las que coinciden).
+- [ ] Puntajes redondeados a 2 decimales en el motor (hoy aparece `0.47000000000000003`).
+- [ ] `npm audit` marca 2 vulnerabilidades moderadas (`uuid` vía ExcelJS). Agregar en `package.json` `"overrides": { "exceljs": { "uuid": "^11.1.1" } }`, como en cobranza, y dejar `npm audit` en 0.
+- [ ] CLI: parámetro opcional `--nombre-banco "BROU"` para el Resumen y el nombre del archivo (hoy usa el nombre del archivo: "banco").
 
 ### Fase 2 — Interfaz web (sin backend)
 - [ ] Landing con aviso de privacidad y botón de demo
@@ -382,3 +391,8 @@ En español, con este orden:
 - Decisiones: ...
 - Probar a mano: ...
 -->
+
+### Fase 1 — 2026-11-24
+- Hecho: se inicializó Next.js 16 con TypeScript estricto, Tailwind, configuración de shadcn/ui, Vitest, ESLint y Prettier; se agregaron documentación, archivos de entorno falsos, CI, gitleaks, CodeQL y Dependabot. Se implementaron lectura CSV/XLSX desde `Uint8Array`, detección de encabezados, Windows-1252, normalización regional, motor completo y determinístico, revisión manual, cierre, fondos de terceros, Excel de siete hojas y CLI. Se incorporaron 68 filas ficticias por archivo (67 UYU procesables y una USD excluida), XLSX invertido, extracto con saldo roto, `esperado.json` definido por intención y 34 tests, incluido 2.000 × 2.000.
+- Decisiones: la web queda como base técnica mínima porque las pantallas son Fase 2; `fs` aparece solo en la CLI y en el generador de fixtures. Los textos de Excel se escriben como valores, nunca como fórmulas. Ante la contradicción entre `toleranciaMaxCentavos: 5000` ($ 50) y los casos obligatorios de $ 150 de diferencia, se priorizaron los casos de prueba explícitos y se fijó el máximo predeterminado en 50.000 centavos ($ 500); conviene confirmar este criterio comercial antes de producción. El XLSX exigido se genera desde datos ficticios versionables y `esperado.json` no consulta al motor.
+- Probar a mano: ejecutar la CLI con `test-data/banco.csv` y `test-data/planilla.csv`, abrir el Excel de `salida/` y revisar las siete hojas, colores, filtros, fechas y totales. Repetir con `test-data/banco_formato_b.xlsx` para validar fechas de Excel y orden inverso, y con `test-data/banco_saldo_roto.csv` para confirmar la alerta de cierre. Probar también un CSV real anonimizado exportado por el banco y, si los encabezados no coinciden, un archivo `--mapeo` propio.

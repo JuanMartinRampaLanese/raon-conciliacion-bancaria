@@ -1,0 +1,11 @@
+.next/
+node_modules/
+salida/
+AGENTS.md
+PROMPTS.md
+SPEC.md
+next-env.d.ts
+test-data/esperado.json
+test-data/*.csv
+public/demo/*.csv
+test-data/*.xlsx

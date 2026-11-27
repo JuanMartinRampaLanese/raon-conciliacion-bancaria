@@ -1,0 +1,787 @@
+{
+  "banco": {
+    "B-0001": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0001"
+      ]
+    },
+    "B-0002": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0002"
+      ]
+    },
+    "B-0003": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0003"
+      ]
+    },
+    "B-0004": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0004"
+      ]
+    },
+    "B-0005": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0005"
+      ]
+    },
+    "B-0006": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0006"
+      ]
+    },
+    "B-0007": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0007"
+      ]
+    },
+    "B-0008": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0008"
+      ]
+    },
+    "B-0009": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0009"
+      ]
+    },
+    "B-0010": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0010"
+      ]
+    },
+    "B-0011": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0011"
+      ]
+    },
+    "B-0012": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0012"
+      ]
+    },
+    "B-0013": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0013"
+      ]
+    },
+    "B-0014": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0014"
+      ]
+    },
+    "B-0015": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0015"
+      ]
+    },
+    "B-0016": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0016"
+      ]
+    },
+    "B-0017": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0017"
+      ]
+    },
+    "B-0018": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0018"
+      ]
+    },
+    "B-0019": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0019"
+      ]
+    },
+    "B-0020": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0020"
+      ]
+    },
+    "B-0021": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0021"
+      ]
+    },
+    "B-0022": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0022"
+      ]
+    },
+    "B-0023": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0023"
+      ]
+    },
+    "B-0024": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0024"
+      ]
+    },
+    "B-0025": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0025"
+      ]
+    },
+    "B-0026": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0026"
+      ]
+    },
+    "B-0027": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0027"
+      ]
+    },
+    "B-0028": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0028"
+      ]
+    },
+    "B-0029": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0029"
+      ]
+    },
+    "B-0030": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0030"
+      ]
+    },
+    "B-0031": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0031"
+      ]
+    },
+    "B-0032": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0032"
+      ]
+    },
+    "B-0033": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0033"
+      ]
+    },
+    "B-0034": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0034"
+      ]
+    },
+    "B-0035": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0035"
+      ]
+    },
+    "B-0036": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0036"
+      ]
+    },
+    "B-0037": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0037"
+      ]
+    },
+    "B-0038": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0038"
+      ]
+    },
+    "B-0039": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0039"
+      ]
+    },
+    "B-0040": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0040"
+      ]
+    },
+    "B-0041": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0041"
+      ]
+    },
+    "B-0042": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0042"
+      ]
+    },
+    "B-0043": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0043"
+      ]
+    },
+    "B-0044": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0044"
+      ]
+    },
+    "B-0045": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0045"
+      ]
+    },
+    "B-0046": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0046"
+      ]
+    },
+    "B-0047": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0047"
+      ]
+    },
+    "B-0048": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0048"
+      ]
+    },
+    "B-0049": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0049"
+      ]
+    },
+    "B-0050": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0050"
+      ]
+    },
+    "B-0051": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0051"
+      ]
+    },
+    "B-0052": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0052"
+      ]
+    },
+    "B-0053": {
+      "estado": "dudoso",
+      "planilla": []
+    },
+    "B-0054": {
+      "estado": "dudoso",
+      "planilla": []
+    },
+    "B-0055": {
+      "estado": "conciliado_con_diferencia",
+      "planilla": [
+        "P-0055"
+      ]
+    },
+    "B-0056": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0056",
+        "P-0057",
+        "P-0058"
+      ]
+    },
+    "B-0057": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0059"
+      ]
+    },
+    "B-0058": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0059"
+      ]
+    },
+    "B-0059": {
+      "estado": "dudoso",
+      "planilla": []
+    },
+    "B-0060": {
+      "estado": "conciliado_con_diferencia",
+      "planilla": [
+        "P-0061"
+      ]
+    },
+    "B-0061": {
+      "estado": "gasto_bancario",
+      "planilla": []
+    },
+    "B-0062": {
+      "estado": "gasto_bancario",
+      "planilla": []
+    },
+    "B-0063": {
+      "estado": "solo_banco",
+      "planilla": []
+    },
+    "B-0064": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0062"
+      ]
+    },
+    "B-0065": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0063"
+      ]
+    },
+    "B-0066": {
+      "estado": "dudoso",
+      "planilla": []
+    },
+    "B-0067": {
+      "estado": "conciliado",
+      "planilla": [
+        "P-0065"
+      ]
+    }
+  },
+  "planilla": {
+    "P-0001": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0001"
+      ]
+    },
+    "P-0002": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0002"
+      ]
+    },
+    "P-0003": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0003"
+      ]
+    },
+    "P-0004": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0004"
+      ]
+    },
+    "P-0005": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0005"
+      ]
+    },
+    "P-0006": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0006"
+      ]
+    },
+    "P-0007": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0007"
+      ]
+    },
+    "P-0008": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0008"
+      ]
+    },
+    "P-0009": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0009"
+      ]
+    },
+    "P-0010": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0010"
+      ]
+    },
+    "P-0011": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0011"
+      ]
+    },
+    "P-0012": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0012"
+      ]
+    },
+    "P-0013": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0013"
+      ]
+    },
+    "P-0014": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0014"
+      ]
+    },
+    "P-0015": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0015"
+      ]
+    },
+    "P-0016": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0016"
+      ]
+    },
+    "P-0017": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0017"
+      ]
+    },
+    "P-0018": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0018"
+      ]
+    },
+    "P-0019": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0019"
+      ]
+    },
+    "P-0020": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0020"
+      ]
+    },
+    "P-0021": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0021"
+      ]
+    },
+    "P-0022": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0022"
+      ]
+    },
+    "P-0023": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0023"
+      ]
+    },
+    "P-0024": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0024"
+      ]
+    },
+    "P-0025": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0025"
+      ]
+    },
+    "P-0026": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0026"
+      ]
+    },
+    "P-0027": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0027"
+      ]
+    },
+    "P-0028": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0028"
+      ]
+    },
+    "P-0029": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0029"
+      ]
+    },
+    "P-0030": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0030"
+      ]
+    },
+    "P-0031": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0031"
+      ]
+    },
+    "P-0032": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0032"
+      ]
+    },
+    "P-0033": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0033"
+      ]
+    },
+    "P-0034": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0034"
+      ]
+    },
+    "P-0035": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0035"
+      ]
+    },
+    "P-0036": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0036"
+      ]
+    },
+    "P-0037": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0037"
+      ]
+    },
+    "P-0038": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0038"
+      ]
+    },
+    "P-0039": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0039"
+      ]
+    },
+    "P-0040": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0040"
+      ]
+    },
+    "P-0041": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0041"
+      ]
+    },
+    "P-0042": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0042"
+      ]
+    },
+    "P-0043": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0043"
+      ]
+    },
+    "P-0044": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0044"
+      ]
+    },
+    "P-0045": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0045"
+      ]
+    },
+    "P-0046": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0046"
+      ]
+    },
+    "P-0047": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0047"
+      ]
+    },
+    "P-0048": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0048"
+      ]
+    },
+    "P-0049": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0049"
+      ]
+    },
+    "P-0050": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0050"
+      ]
+    },
+    "P-0051": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0051"
+      ]
+    },
+    "P-0052": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0052"
+      ]
+    },
+    "P-0053": {
+      "estado": "solo_planilla",
+      "banco": []
+    },
+    "P-0054": {
+      "estado": "solo_planilla",
+      "banco": []
+    },
+    "P-0055": {
+      "estado": "conciliado_con_diferencia",
+      "banco": [
+        "B-0055"
+      ]
+    },
+    "P-0056": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0056"
+      ]
+    },
+    "P-0057": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0056"
+      ]
+    },
+    "P-0058": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0056"
+      ]
+    },
+    "P-0059": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0057",
+        "B-0058"
+      ]
+    },
+    "P-0060": {
+      "estado": "solo_planilla",
+      "banco": []
+    },
+    "P-0061": {
+      "estado": "conciliado_con_diferencia",
+      "banco": [
+        "B-0060"
+      ]
+    },
+    "P-0062": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0064"
+      ]
+    },
+    "P-0063": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0065"
+      ]
+    },
+    "P-0064": {
+      "estado": "solo_planilla",
+      "banco": []
+    },
+    "P-0065": {
+      "estado": "conciliado",
+      "banco": [
+        "B-0067"
+      ]
+    },
+    "P-0066": {
+      "estado": "solo_planilla",
+      "banco": []
+    },
+    "P-0067": {
+      "estado": "solo_planilla",
+      "banco": []
+    }
+  }
+}
