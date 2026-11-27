@@ -86,13 +86,13 @@ export function AccesoCuenta({
       ) : (
         <form onSubmit={(evento) => void pedirEnlace(evento)}>
           <h2>Recibí un enlace de acceso</h2>
-          <p>No necesitás contraseña. Si es tu primer ingreso, se crea tu organización y quedás como owner.</p>
+          <p>No necesitás contraseña. Si es tu primer ingreso, se crea tu organización y quedás como dueño.</p>
           <label className="field">
             <span>Email</span>
             <input type="email" autoComplete="email" required value={email} onChange={(evento) => setEmail(evento.target.value)} />
           </label>
           <button className="button button-primary" type="submit" disabled={enviando}>
-            {enviando ? 'Enviando…' : 'Enviar magic link'}
+            {enviando ? 'Enviando…' : 'Enviarme el enlace'}
           </button>
         </form>
       )}

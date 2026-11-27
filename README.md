@@ -34,7 +34,7 @@ local sin login. Los placeholders de `.env.example` también se consideran confi
 
 ## Configurar Supabase
 
-1. Creá un proyecto y aplicá `supabase/migrations/202611270001_fase3.sql` con Supabase CLI (`supabase db push`) o desde el SQL Editor.
+1. Creá un proyecto y aplicá, en orden, todas las migraciones de `supabase/migrations/` con Supabase CLI (`supabase db push`) o desde el SQL Editor.
 2. En **Authentication → URL Configuration**, agregá `http://localhost:3000/auth/callback` y la URL equivalente del deploy a las redirect URLs permitidas.
 3. Definí estas variables en `.env.local` y reiniciá el servidor:
 
@@ -51,24 +51,24 @@ La migración habilita RLS en `organizaciones`, `miembros`, `cuentas`, `plantill
 y `conciliaciones`. Todas las consultas de la aplicación llevan `organizacion_id`; las políticas
 comprueban la membresía con `auth.uid()`.
 
-### Prueba manual de RLS
+### Verificación automática de RLS
 
-Este proyecto no incluye un contenedor local de Supabase para ejecutar pgTAP en CI. Antes de usar
-un proyecto real, verificá el aislamiento así:
+`tests/rls.test.ts` levanta Postgres en memoria con PGlite, crea el esquema `auth` mínimo de
+Supabase y aplica todas las migraciones en orden. Sus siete casos prueban el alta inicial, el
+aislamiento entre organizaciones, las escrituras cruzadas, la administración de miembros, los
+permisos anónimos y la autoría de las conciliaciones. También comprueba los `GRANT` efectivos para
+fallar si vuelven a abrirse permisos.
 
-1. Abrí una ventana normal, ingresá con `usuario-a@example.test`, creá una regla, ejecutá una
-   conciliación demo y confirmá que aparece en `/historial`.
-2. Abrí una ventana de incógnito, ingresá con `usuario-b@example.test` y confirmá que se crea otra
-   organización: no deben aparecer ni la regla ni el resumen del usuario A.
-3. Con la sesión B, usá el cliente Supabase del navegador o una llamada REST autenticada para
-   seleccionar y actualizar los ids de la organización A. La selección debe devolver cero filas y
-   la modificación no debe afectar ninguna fila.
-4. Cerrá sesión y visitá directamente `/conciliar`, `/reglas`, `/resultado` y `/historial`: con
-   Supabase configurado deben redirigir a `/cuenta`. Quitá las dos variables de Supabase, reiniciá
-   y repetí: las rutas deben abrir en modo local sin pedir login.
-5. En el Table Editor, revisá una fila de `conciliaciones`: debe contener sólo cuenta, período,
-   cantidades, porcentajes, totales por estado, cierre, autor y fecha; nunca descripciones,
-   movimientos ni bytes de archivos.
+    npm test -- tests/rls.test.ts
+
+### Pruebas manuales restantes
+
+1. En un proyecto Supabase real, pedí el enlace desde `/cuenta`, abrilo en el mismo navegador y
+   confirmá que vuelve a `/historial` con la sesión activa.
+2. Cerrá sesión y visitá directamente `/conciliar`, `/reglas`, `/resultado` y `/historial`: con
+   Supabase configurado deben redirigir a `/cuenta` y conservar el destino después del login.
+3. Quitá `NEXT_PUBLIC_SUPABASE_URL` y la clave pública, reiniciá la aplicación y verificá que las
+   rutas abren sin login, y que reglas, plantillas y resúmenes siguen usando `localStorage`.
 
 ## Deploy en Vercel
 

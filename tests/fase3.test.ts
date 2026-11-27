@@ -135,4 +135,12 @@ describe('rutas y corrección visual', () => {
     expect(css).toMatch(/\.funds-summary dl div \{[^}]*grid-template-columns: minmax\(0, 1fr\)/);
     expect(css).toMatch(/\.funds-summary dt \{[^}]*word-break: normal/);
   });
+
+  it('muestra el acceso a la cuenta completamente en español', () => {
+    const acceso = readFileSync(join(process.cwd(), 'components', 'acceso-cuenta.tsx'), 'utf8');
+    expect(acceso).toContain('Enviarme el enlace');
+    expect(acceso).toContain('quedás como dueño');
+    expect(acceso).not.toContain('Enviar magic link');
+    expect(acceso).not.toContain('quedás como owner');
+  });
 });
