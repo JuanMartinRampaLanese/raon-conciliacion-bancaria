@@ -118,7 +118,7 @@ it('genera siete hojas, fechas reales y ningún valor fórmula', async () => {
   expect(filaResumen('Movimientos de la planilla').getCell(2).value).toBe(1);
   expect(filaResumen('Diferencia fondos/banco').getCell(2).value).toBe(1_000);
   expect(filaResumen('Generado el').getCell(2).value).toBeInstanceOf(Date);
-  const totalConciliado = filaResumen('Estado: conciliado');
+  const totalConciliado = filaResumen('Estado: Conciliado');
   expect(totalConciliado.getCell(2).value).toBeNull();
   expect(totalConciliado.getCell(3)).toMatchObject({ value: 1, numFmt: '0' });
   expect(totalConciliado.getCell(4)).toMatchObject({ value: 100, numFmt: '#,##0.00' });
@@ -212,4 +212,86 @@ it('cuenta solo la regla de gasto específica que realmente se aplicó', async (
       ['ESPECIFICA', 1],
     ]),
   );
+});
+
+it('muestra nombres legibles para todos los estados en la hoja Resumen', async () => {
+  const estados = {
+    conciliado: 'Conciliado',
+    conciliado_con_diferencia: 'Conciliado con diferencia',
+    gasto_bancario: 'Gasto bancario',
+    dudoso: 'Dudoso',
+    solo_banco: 'Solo en banco',
+    solo_planilla: 'Solo en planilla',
+  } as const;
+  const resumen: Resumen = {
+    cantidadBanco: 0,
+    cantidadPlanilla: 0,
+    conciliados: 0,
+    dudosos: 0,
+    soloBanco: 0,
+    soloPlanilla: 0,
+    gastosBancarios: 0,
+    porcentajeConciliadoCantidad: 0,
+    porcentajeConciliadoMonto: 0,
+    totalesPorEstado: Object.fromEntries(
+      Object.keys(estados).map((estado) => [estado, { cantidad: 1, centavos: 100 }]),
+    ),
+  };
+  const cierre = controlarCierre([]);
+  const bytes = await generarExcel({
+    banco: 'BROU',
+    moneda: 'UYU',
+    periodo: '2026-11',
+    movimientosBanco: [],
+    movimientosPlanilla: [],
+    resultados: [],
+    resumen,
+    cierre,
+    fondos: calcularSaldosPorCliente([], []),
+    reglas: [],
+  });
+  const libro = new ExcelJS.Workbook();
+  await libro.xlsx.load(bytes.slice().buffer);
+  const indicadores = new Set<string>();
+  libro.getWorksheet('Resumen')!.eachRow((fila, numero) => {
+    if (numero > 1) indicadores.add(String(fila.getCell(1).value));
+  });
+  expect([...Object.values(estados)].every((estado) => indicadores.has(`Estado: ${estado}`))).toBe(true);
+  expect([...indicadores].some((indicador) => indicador.includes('conciliado_con_diferencia'))).toBe(false);
+});
+
+it('escribe Generado el con la hora local de la zona del usuario', async () => {
+  const resumen: Resumen = {
+    cantidadBanco: 0,
+    cantidadPlanilla: 0,
+    conciliados: 0,
+    dudosos: 0,
+    soloBanco: 0,
+    soloPlanilla: 0,
+    gastosBancarios: 0,
+    porcentajeConciliadoCantidad: 0,
+    porcentajeConciliadoMonto: 0,
+    totalesPorEstado: {},
+  };
+  const bytes = await generarExcel({
+    banco: 'BROU',
+    moneda: 'UYU',
+    periodo: '2026-11',
+    movimientosBanco: [],
+    movimientosPlanilla: [],
+    resultados: [],
+    resumen,
+    cierre: controlarCierre([]),
+    fondos: calcularSaldosPorCliente([], []),
+    reglas: [],
+    generadoEl: new Date('2026-11-26T15:30:00.000Z'),
+    zonaHoraria: 'America/Montevideo',
+  });
+  const libro = new ExcelJS.Workbook();
+  await libro.xlsx.load(bytes.slice().buffer);
+  let generadoEl: Date | undefined;
+  libro.getWorksheet('Resumen')!.eachRow((fila) => {
+    if (fila.getCell(1).value === 'Generado el') generadoEl = fila.getCell(2).value as Date;
+  });
+  expect(generadoEl?.toISOString()).toBe('2026-11-26T12:30:00.000Z');
 });

@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import type { Moneda, Movimiento, Regla, Resultado, Resumen } from '@/lib/dominio';
+import type { Estado, Moneda, Movimiento, Regla, Resultado, Resumen } from '@/lib/dominio';
 import type { ControlCierre } from '@/lib/cierre';
 import type { ResumenFondosTerceros } from '@/lib/saldos';
 import { normalizarTexto } from '@/lib/normalizar';
@@ -27,6 +27,58 @@ export interface EntradaExcel {
   fondos: ResumenFondosTerceros;
   reglas: Regla[];
   generadoEl?: Date;
+  zonaHoraria?: string;
+}
+
+export const ETIQUETAS_ESTADO: Record<Estado, string> = {
+  conciliado: 'Conciliado',
+  conciliado_con_diferencia: 'Conciliado con diferencia',
+  gasto_bancario: 'Gasto bancario',
+  dudoso: 'Dudoso',
+  solo_banco: 'Solo en banco',
+  solo_planilla: 'Solo en planilla',
+};
+
+export function fechaHoraLocalExcel(instante: Date, zonaHoraria?: string): Date {
+  const zona = zonaHoraria || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  try {
+    const partes = new Intl.DateTimeFormat('en-CA', {
+      timeZone: zona,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(instante)
+      .reduce<Record<string, string>>((acumulado, parte) => {
+        acumulado[parte.type] = parte.value;
+        return acumulado;
+      }, {});
+    return new Date(
+      Date.UTC(
+        Number(partes.year),
+        Number(partes.month) - 1,
+        Number(partes.day),
+        Number(partes.hour),
+        Number(partes.minute),
+        Number(partes.second),
+      ),
+    );
+  } catch {
+    return new Date(
+      Date.UTC(
+        instante.getFullYear(),
+        instante.getMonth(),
+        instante.getDate(),
+        instante.getHours(),
+        instante.getMinutes(),
+        instante.getSeconds(),
+      ),
+    );
+  }
 }
 
 function fechaExcel(fecha: string | undefined): Date | '' {
@@ -126,7 +178,7 @@ function agregarResumen(libro: ExcelJS.Workbook, entrada: EntradaExcel): void {
     },
     {
       indicador: 'Generado el',
-      valor: entrada.generadoEl ?? new Date(),
+      valor: fechaHoraLocalExcel(entrada.generadoEl ?? new Date(), entrada.zonaHoraria),
       formato: 'dd/mm/yyyy hh:mm',
     },
     {
@@ -140,7 +192,7 @@ function agregarResumen(libro: ExcelJS.Workbook, entrada: EntradaExcel): void {
   }
   for (const [estado, total] of Object.entries(entrada.resumen.totalesPorEstado)) {
     const fila = hoja.addRow([
-      `Estado: ${estado}`,
+      `Estado: ${ETIQUETAS_ESTADO[estado as Estado]}`,
       null,
       total?.cantidad ?? 0,
       (total?.centavos ?? 0) / 100,

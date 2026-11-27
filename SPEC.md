@@ -354,15 +354,26 @@ En español, con este orden:
 - [x] CLI: parámetro opcional `--nombre-banco "BROU"` para el Resumen y el nombre del archivo (hoy usa el nombre del archivo: "banco").
 
 ### Fase 2 — Interfaz web (sin backend)
-- [ ] Landing con aviso de privacidad y botón de demo
-- [ ] Asistente de 3 pasos con mapeo de columnas y vista previa interpretada
-- [ ] Web Worker para lectura + motor + Excel, con barra de progreso
-- [ ] `/resultado` con tarjetas, pestañas, buscador y filtros
-- [ ] Revisión de dudosos con creación de reglas
-- [ ] `/reglas` con reglas y plantillas en `localStorage`
-- [ ] Descarga del Excel
-- [ ] Modo demo (`NEXT_PUBLIC_DEMO_MODE`) con los archivos de `public/demo/`
-- [ ] Instrucciones de deploy en Vercel en el README
+- [x] Landing con aviso de privacidad y botón de demo
+- [x] Asistente de 3 pasos con mapeo de columnas y vista previa interpretada
+- [x] Web Worker para lectura + motor + Excel, con barra de progreso
+- [x] `/resultado` con tarjetas, pestañas, buscador y filtros
+- [x] Revisión de dudosos con creación de reglas
+- [x] `/reglas` con reglas y plantillas en `localStorage`
+- [x] Descarga del Excel
+- [x] Modo demo (`NEXT_PUBLIC_DEMO_MODE`) con los archivos de `public/demo/`
+- [x] Instrucciones de deploy en Vercel en el README
+
+#### Correcciones de la revisión (2026-11-26)
+- [ ] **Aceptar un dudoso usa dos veces el mismo movimiento de la planilla.** `aceptarDudoso` crea el cruce manual pero el movimiento sigue también en su resultado `solo_planilla` (en los datos de prueba, aceptar R-0060 deja P-0064 en R-0060 y en R-0067; "Solo en planilla" sigue en 6). Al aceptar: quitar esos ids de la planilla de su `solo_planilla` y sacarlos de los candidatos de otros dudosos; si un dudoso se queda sin candidatos, pasa a `solo_banco` con su sugerencia de la sección 7.3. Test en `tests/motor.test.ts` que verifique que ningún id aparece en dos resultados después de aceptar y que el resumen baja en uno "Solo en planilla".
+- [ ] **Móvil:** en 390 px y 320 px, `/conciliar` (paso 3) y `/resultado` se desbordan a lo ancho (la página mide 500 px y 418 px): se cortan las tarjetas, la tabla de vista previa y el botón "Nueva conciliación" del encabezado. Columnas de grid con `minmax(0, 1fr)` y `min-width: 0`; las tablas hacen scroll dentro de su contenedor, no la página. Verificar con capturas en 320, 390, 768 y 1366 px que `document.documentElement.scrollWidth` no supere el ancho de la ventana en `/`, `/conciliar` (paso 3 con la demo), `/resultado` (pestañas Todos y Dudoso) y `/reglas`.
+- [ ] **Tarjeta de fondos:** en 1366 px el monto "$ 743.750,00" se sale de la tarjeta. La tarjeta muestra fondos de terceros, saldo en banco y diferencia (sección 9); si la diferencia es negativa, alerta roja visible con el texto "En el banco hay menos plata que la que se le debe a terceros".
+- [ ] **Cierre en pantalla (sección 8):** cuando no cierra, alerta roja con la diferencia y la lista de filas donde se corta el saldo (hoy solo dice "No cierra"; probar con `banco_saldo_roto.csv`). "Sin verificar" en amarillo. Si el mapeo del extracto no tiene columna de saldo, el paso 3 ofrece dos campos opcionales (saldo inicial y saldo final) que se pasan a `controlarCierre`, que ya los acepta.
+- [ ] **Revisión de dudosos:** hoy hay un "Rechazar" en cada candidato, pero descarta el movimiento entero, con todos sus candidatos. Dejar "Aceptar" en cada candidato y un solo botón por movimiento, "Ninguno coincide". El botón rojo tiene tan poco contraste que parece deshabilitado: contraste mínimo 4,5:1. El motivo repite el porcentaje ("89% de coincidencia · 89%"): mostrarlo una vez.
+- [ ] Al aceptar, el panel "Guardar una regla" aparece arriba de todo y queda fuera de la vista. Mostrarlo dentro de la tarjeta del dudoso aceptado, o desplazarse hasta él y moverle el foco.
+- [ ] **Fechas en pantalla en `dd/mm/aaaa`** (hoy `2026-10-01`, que además se parte en dos líneas): tabla de resultados, dudosos y "Fecha interpretada" de la vista previa. Función de formato con test.
+- [ ] Vista previa del extracto con débito y crédito separados: "Monto crudo" muestra "/ 10.010,00". Mostrar "Crédito 10.010,00" o "Débito 1.000,00" según la columna que tenga valor.
+- [ ] Detalles: en la tabla, el cliente aparece repetido ("Foxtrot, Foxtrot, Foxtrot"); mostrar cada cliente una vez. En `/reglas`, las etiquetas de la plantilla usan las claves internas ("descripcion", "debito"); usar las mismas etiquetas del paso de mapeo. La maqueta de la landing muestra 91,0 %, 2 dudosos y 3 solo en banco, pero la demo real da 89,6 %, 4 y 1: usar los números reales de la demo. En la descarga, `URL.revokeObjectURL` se llama justo después de `click()`, lo que en Safari y Firefox puede cancelar la descarga: liberarlo con un `setTimeout`.
 
 ### Fase 3 — Cuentas y datos guardados (Supabase)
 - [ ] Migraciones con todas las tablas y RLS
@@ -401,3 +412,8 @@ En español, con este orden:
 - Hecho: se corrigieron los formatos de cada indicador de la hoja Resumen y se separaron los totales por estado en columnas numéricas de cantidad y monto. El pago parcial ahora reconoce al cliente por regla o por similitud, `solo_planilla` suma los importes de la planilla, los puntajes salen con dos decimales y las reglas de gasto eligen el patrón más largo. La hoja Reglas aplicadas cuenta únicamente la regla seleccionada. Se agregó `--nombre-banco`, el override seguro de `uuid` para ExcelJS y tests específicos; la suite quedó en 40 tests.
 - Decisiones: la especificidad de las reglas se mide sobre el patrón normalizado y, ante patrones del mismo largo, se conserva el orden original. El redondeo se hace al calcular el puntaje para que resultados y candidatos compartan el mismo valor. `--nombre-banco` conserva como fallback el nombre del archivo, sin cambiar ejecuciones existentes. En el Resumen, las filas de estado dejan vacía la columna Valor con `null` para evitar heredar visualmente el formato de fecha.
 - Probar a mano: ejecutar la CLI con `--nombre-banco "BROU"`, confirmar que el archivo se llama `conciliacion_brou_UYU_2026-10.xlsx` y abrir Resumen para revisar porcentajes, fecha, montos y totales por estado. En Dudosos, comprobar que el pago parcial muestra cuánto falta. En Reglas aplicadas, verificar que `IVA COMISION` cuente ese movimiento y `COMISION` no lo duplique.
+
+### Fase 2 — 2026-11-26
+- Hecho: se implementaron la landing, el asistente de tres pasos, la detección y edición de columnas con diez filas de vista previa interpretada, el modo demo, el Web Worker con progreso, las tarjetas y tablas de resultados, pestañas, buscador, filtro de ingresos/egresos, revisión manual de dudosos, creación de reglas, administración de reglas y plantillas, saldos por cliente y descarga del Excel. Se agregó la interfaz `Almacen` con implementación local tolerante a bloqueos de `localStorage`, documentación de deploy en Vercel y tests del flujo del worker, la vista previa y el almacenamiento. En la hoja Resumen, los estados ahora usan nombres legibles y “Generado el” guarda la hora de la zona local del usuario; ambas correcciones tienen tests.
+- Decisiones: los archivos, movimientos y resultados viven solo en memoria; cambiar de ruta dentro de la app conserva la conciliación, pero recargar la pestaña la descarta. Solo reglas, plantillas y hasta 50 resúmenes numéricos se guardan en `localStorage`, siempre dentro de `try/catch`. Cada operación pesada abre un Web Worker independiente y lo termina al responder. Aceptar o rechazar un dudoso recalcula el resumen y los fondos sin releer los archivos; el Excel se regenera al descargar si hubo revisión manual. El botón de ejemplo funciona desde la landing y `NEXT_PUBLIC_DEMO_MODE=true` agrega el banner explícito de demo.
+- Probar a mano: crear `.env.local` con `NEXT_PUBLIC_DEMO_MODE=true`, iniciar `npm run dev`, entrar por “Probar con datos de ejemplo” y revisar que aparezcan los dos archivos, el mapeo y los valores crudo/interpretado. Ejecutar la conciliación y confirmar que la barra avance sin congelar la pantalla; probar tarjetas, pestañas, búsqueda y filtro. En Dudosos, aceptar un candidato, editar y guardar la regla; rechazar otro; entrar a `/reglas`, editar y borrar reglas y plantillas, y recargar para verificar la persistencia. Descargar el Excel, abrir Resumen y comprobar los seis nombres de estado y que “Generado el” coincida con la hora local. Repetir con un CSV/XLSX propio anonimizado, probar teclado y anchos móvil/tablet/escritorio, y verificar que una recarga de `/resultado` no conserve movimientos.

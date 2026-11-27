@@ -4,14 +4,15 @@ Conciliá el extracto del banco con tu planilla en minutos y sabé cuánta plata
 
 ![CI](https://github.com/RAON/conciliacion-bancaria/actions/workflows/ci.yml/badge.svg)
 
-La Fase 1 incluye lectura de CSV/XLSX, normalización regional, motor de cruce determinístico,
-control de cierre, saldos de terceros, Excel de siete hojas y una CLI. La interfaz web completa
-forma parte de la Fase 2.
+La aplicación incluye lectura de CSV/XLSX, normalización regional, motor de cruce determinístico,
+control de cierre, saldos de terceros, Excel de siete hojas, una CLI y una interfaz web completa
+que procesa todo en un Web Worker.
 
 ## Privacidad
 
-El núcleo recibe bytes y no usa red ni base de datos. La futura interfaz procesa los archivos en
-el navegador. No se guardan movimientos ni extractos. El diseño toma la Ley 18.331 de Uruguay
+El núcleo recibe bytes y no usa red ni base de datos. La interfaz procesa los archivos en el
+navegador. No se guardan movimientos ni extractos; solo reglas y plantillas de columnas quedan en
+`localStorage`. El diseño toma la Ley 18.331 de Uruguay
 como marco, sin afirmar certificaciones.
 
 ## Correr localmente
@@ -24,12 +25,27 @@ El comando imprime el resumen y deja el archivo generado en salida/. Podés indi
 se muestra en el Resumen y en el archivo con `--nombre-banco "BROU"`. Para un formato no detectado,
 podés agregar `--mapeo mapeo.json` con objetos banco y planilla.
 
+Para mostrar el banner de demo y cargar los archivos ficticios desde la interfaz, copiá
+`.env.example` a `.env.local`, definí `NEXT_PUBLIC_DEMO_MODE=true` y reiniciá `npm run dev`.
+
+## Deploy en Vercel
+
+1. Importá el repositorio en Vercel y elegí el preset **Next.js**.
+2. Usá Node.js 20 o superior. Los comandos predeterminados (`npm ci` y `npm run build`) son suficientes.
+3. Si el deploy es una demo pública, agregá `NEXT_PUBLIC_DEMO_MODE=true` en **Project Settings → Environment Variables** para Production, Preview y Development.
+4. No configures Supabase ni servicios de archivos en esta fase: la lectura, el motor y el Excel corren en el navegador.
+5. Desplegá y probá `/`, `/conciliar`, `/resultado` y `/reglas`. La navegación directa a `/resultado` sin una conciliación muestra el estado vacío esperado.
+
+Vercel sirve la aplicación Next.js; ningún route handler recibe los archivos. Las variables con
+prefijo `NEXT_PUBLIC_` quedan incluidas en el build, por lo que un cambio requiere un nuevo deploy.
+
 ## Verificación
 
     npm run lint
     npm run typecheck
     npm test
     npm run build
+    npm audit
 
 Los datos de test-data/ y public/demo/ son completamente inventados.
 

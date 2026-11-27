@@ -33,6 +33,13 @@ Antes de terminar, tienen que pasar npm run lint, npm run typecheck, npm test y 
 Marcá en SPEC.md los ítems de la Fase 2 que quedaron hechos y escribí en "Registro de avances" qué hiciste, qué decidiste y qué tengo que probar a mano.
 ```
 
+### Correcciones de la revisión de la Fase 2 (antes de la Fase 3)
+```
+Leé AGENTS.md y SPEC.md completos. Implementá SOLO los ítems de "Correcciones de la revisión (2026-11-26)" de la Fase 2 en SPEC.md. Empezá por el de aceptar dudosos (es un error del motor y lleva test). Cada corrección que se pueda probar lleva su test.
+Antes de terminar, tienen que pasar npm run lint, npm run typecheck, npm test, npm run build y npm audit sin vulnerabilidades. Revisá con capturas en 320, 390, 768 y 1366 px que ninguna pantalla tenga scroll horizontal.
+Marcá en SPEC.md los ítems que quedaron hechos y escribí en "Registro de avances" qué hiciste, qué decidiste y qué tengo que probar a mano.
+```
+
 ### Fase 3 — Cuentas y datos guardados (Supabase)
 ```
 Leé AGENTS.md y SPEC.md completos. Implementá SOLO la Fase 3 de SPEC.md.
